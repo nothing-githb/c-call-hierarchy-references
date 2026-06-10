@@ -1,0 +1,16 @@
+.vscode/**
+src/**
+example/**
+example-large/**
+example-xl/**
+example-xxl/**
+tools/**
+test/**
+PUBLISHING.md
+package-lock.json
+**/*.ts
+**/*.map
+**/*.vsix
+tsconfig.json
+.gitignore
+node_modules/**

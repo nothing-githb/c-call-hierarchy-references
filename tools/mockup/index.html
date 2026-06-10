@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>C Call Hierarchy — mockups</title>
+<style>
+  :root {
+    --bg: #1e1e1e; --side: #252526; --side2: #2d2d2e; --fg: #cccccc; --dim: #8c8c8c;
+    --sect: #bdbdbd; --sel: #04395e; --selb: #0a6ebd; --hover: #2a2d2e;
+    --inp: #3c3c3c; --focus: #007fd4; --func: #c191e6; --field: #75beff;
+    --green: #8FC79F; --red: #E69595; --yellow: #D7BA1D; --gray: #9DA5B4;
+    --line: #3a3d41; --findbg: rgba(234,162,77,.30); --findbd: #e9a34d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg);
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--fg); }
+  .frame { display: none; }
+  body:target { } /* noop */
+  .show { display: block !important; }
+
+  /* layout */
+  .win { display: flex; }
+  .activity { width: 48px; background: #333333; display: flex; flex-direction: column;
+    align-items: center; padding-top: 8px; gap: 14px; }
+  .activity .ico { width: 26px; height: 26px; opacity: .55; }
+  .activity .ico.active { opacity: 1; border-left: 2px solid #fff; padding-left: 0; }
+  .sidebar { width: 340px; background: var(--side); border-right: 1px solid #1b1b1b; }
+  .editor { flex: 1; background: var(--bg); padding: 14px 18px; min-width: 360px; }
+
+  .secthead { font-size: 11px; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--sect); padding: 6px 10px 6px 18px; font-weight: 600; }
+  .panel { border-bottom: 1px solid #1b1b1b; padding-bottom: 6px; }
+
+  /* filter pane */
+  .filter { padding: 6px 8px; }
+  .frow { display: flex; gap: 4px; }
+  .filter input { flex: 1; background: var(--inp); border: 1px solid var(--focus);
+    color: var(--fg); border-radius: 2px; padding: 3px 7px; font-size: 12px; outline: none; }
+  .filter button { background: #313131; border: 1px solid #444; color: var(--fg);
+    border-radius: 2px; padding: 3px 8px; font-size: 12px; }
+  .chips { display: flex; gap: 6px; align-items: center; margin-top: 7px; }
+  .chips .lbl { font-size: 11px; color: var(--dim); }
+  .chip { width: 18px; height: 18px; line-height: 16px; text-align: center; border: 1px solid currentColor;
+    border-radius: 3px; font-size: 12px; }
+  .chip.w { color: var(--red); } .chip.r { color: var(--green); }
+  .chip.d { color: var(--yellow); } .chip.u { color: var(--gray); }
+  .chip.off { opacity: .3; }
+  .hint { font-size: 11px; color: var(--dim); margin-top: 7px; }
+
+  /* tree rows */
+  .row { display: flex; align-items: center; height: 22px; padding-left: 8px; font-size: 13px;
+    white-space: nowrap; }
+  .row:hover { background: var(--hover); }
+  .row.sel { background: var(--sel); box-shadow: inset 0 0 0 1px var(--selb); }
+  .tw { width: 16px; color: var(--dim); font-size: 10px; text-align: center; flex: 0 0 auto; }
+  .ind { flex: 0 0 auto; }
+  .gi { width: 16px; height: 16px; margin-right: 4px; flex: 0 0 auto; vertical-align: middle; }
+  .nm { color: var(--fg); }
+  .nm.func { color: var(--func); }
+  .desc { color: var(--dim); font-size: 11px; margin-left: 8px; }
+  .badge { color: #d7d7d7; }
+  .letter { font-weight: 400; margin-right: 6px; font-size: 13px; }
+  .letter.w { color: var(--red); } .letter.r { color: var(--green); } .letter.d { color: var(--yellow); }
+  .sub { font-size: 11px; color: var(--dim); padding: 2px 10px 6px 18px; }
+
+  /* editor code */
+  pre { margin: 0; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; line-height: 19px; color: #d4d4d4; }
+  .ln { color: #6a6a6a; display: inline-block; width: 26px; text-align: right; margin-right: 16px; user-select: none; }
+  .kw { color: #569cd6; } .ty { color: #4ec9b0; } .fn { color: #dcdcaa; } .nu { color: #b5cea8; }
+  .cm { color: #6a9955; } .gv { color: #9cdcfe; }
+  .flash { background: var(--findbg); outline: 1px solid var(--findbd); border-radius: 2px; }
+  .etitle { color: var(--dim); font-size: 12px; margin-bottom: 10px; }
+  .caption { color: var(--dim); font-size: 12px; padding: 8px 0 0 18px; }
+</style>
+</head>
+<body>
+
+<!-- ============ HERO: sidebar (filter + call hierarchy) + editor ============ -->
+<div class="frame" id="hero">
+<div class="win">
+  <div class="activity">
+    <img class="ico active" src="icon.png" />
+    <div class="ico" style="background:#5a5a5a;border-radius:4px"></div>
+    <div class="ico" style="background:#5a5a5a;border-radius:4px"></div>
+  </div>
+  <div class="sidebar">
+    <div class="panel">
+      <div class="secthead">Filter</div>
+      <div class="filter">
+        <div class="frow"><input value="bus" /><button>Clear</button></div>
+        <div class="chips"><span class="lbl">refs:</span>
+          <span class="chip w">w</span><span class="chip r">r</span>
+          <span class="chip d">d</span><span class="chip u">·</span></div>
+        <div class="hint">name/path · glob · /regex/</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="secthead">Call Hierarchy · bus_write</div>
+      <div class="row sel"><span class="tw">⌄</span>__FN__ bus_write <span class="desc">(int reg, int val) · src/bus.c</span></div>
+      <div class="row" style="padding-left:24px"><span class="tw">⌄</span>__INC__ Callers <span class="desc badge">276</span></div>
+      <div class="row" style="padding-left:48px"><span class="tw">⌄</span>__FN__ hal0_f0 <span class="desc">(int x) · src/hal_0.c</span></div>
+      <div class="row" style="padding-left:48px"><span class="tw">⌄</span>__FN__ drv3_f5 <span class="desc">(int x) · src/drv_3.c</span></div>
+      <div class="row" style="padding-left:48px"><span class="tw">›</span>__FN__ dispatch <span class="desc"><span class="badge">×3</span> · (int ev) · src/app.c</span></div>
+      <div class="row" style="padding-left:24px"><span class="tw">⌄</span>__OUT__ Calls <span class="desc badge">2</span></div>
+      <div class="row" style="padding-left:48px"><span class="tw">·</span>__VAR__ g_writes <span class="desc">· src/bus.c</span></div>
+      <div class="row" style="padding-left:48px"><span class="tw">·</span>__VAR__ g_bus <span class="desc">· src/bus.c</span></div>
+    </div>
+  </div>
+  <div class="editor">
+    <div class="etitle">bus.c — src</div>
+    <pre><span class="ln">9</span><span class="kw">void</span> <span class="fn">bus_write</span>(<span class="kw">int</span> reg, <span class="kw">int</span> val) {
+<span class="ln">10</span>    <span class="gv">g_bus</span>[reg &amp; (BUS_REGS - <span class="nu">1</span>)] = val;   <span class="cm">/* write */</span>
+<span class="ln">11</span>    <span class="flash"><span class="gv">g_writes</span></span>++;                          <span class="cm">/* write */</span>
+<span class="ln">12</span>}</pre>
+    <div class="caption">Click a node → the call site is selected, centered and briefly flashed.</div>
+  </div>
+</div>
+</div>
+
+<!-- ============ REFERENCES (folder grouping + r/w icons) ============ -->
+<div class="frame" id="refs">
+<div class="sidebar" style="width:380px">
+  <div class="panel">
+    <div class="secthead">Filter</div>
+    <div class="filter">
+      <div class="frow"><input value="g_state" /><button>Clear</button></div>
+      <div class="chips"><span class="lbl">refs:</span>
+        <span class="chip w">w</span><span class="chip r">r</span>
+        <span class="chip d">d</span><span class="chip u off">·</span></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="secthead">References</div>
+    <div class="sub">g_state · 9 refs in 3 files · 4w 4r 1d</div>
+    <div class="row"><span class="tw">⌄</span>__FOLDER__ src <span class="desc">9 refs</span></div>
+    <div class="row" style="padding-left:30px"><span class="tw">⌄</span>__FILE__ bus.c <span class="desc">2 refs</span></div>
+    <div class="row" style="padding-left:52px"><span class="tw"></span><span class="letter d">d</span><span class="rcode">int g_state;</span><span class="desc">:5:5</span></div>
+    <div class="row" style="padding-left:30px"><span class="tw">⌄</span>__FILE__ state.c <span class="desc">7 refs</span></div>
+    <div class="row" style="padding-left:52px"><span class="tw"></span><span class="letter w">w</span><span class="rcode">g_events[ev &amp; 31] = <b>g_state</b>;</span></div>
+    <div class="row" style="padding-left:52px"><span class="tw"></span><span class="letter r">r</span><span class="rcode">if (<b>g_state</b> &gt; 100) {</span></div>
+    <div class="row sel" style="padding-left:52px"><span class="tw"></span><span class="letter w">w</span><span class="rcode"><b>g_state</b> = 0;</span></div>
+    <div class="row" style="padding-left:52px"><span class="tw"></span><span class="letter r">r</span><span class="rcode"><b>g_state</b> += cfg_get_mode();</span></div>
+  </div>
+</div>
+</div>
+
+<!-- ============ HEADER INCLUDES ============ -->
+<div class="frame" id="inc">
+<div class="sidebar" style="width:360px">
+  <div class="panel">
+    <div class="secthead">Header Includes</div>
+    <div class="sub">app.h — includes</div>
+    <div class="row sel"><span class="tw">⌄</span>__FILE__ app.h</div>
+    <div class="row" style="padding-left:30px"><span class="tw">⌄</span>__FILE__ svc_0.h <span class="desc">include</span></div>
+    <div class="row" style="padding-left:52px"><span class="tw">⌄</span>__FILE__ drv_0.h <span class="desc">include</span></div>
+    <div class="row" style="padding-left:74px"><span class="tw">⌄</span>__FILE__ hal_0.h <span class="desc">include</span></div>
+    <div class="row" style="padding-left:96px"><span class="tw">⌄</span>__FILE__ bus.h <span class="desc">include</span></div>
+    <div class="row" style="padding-left:118px"><span class="tw"></span>__FILE__ common.h <span class="desc">include</span></div>
+    <div class="row" style="padding-left:74px"><span class="tw"></span>__FILE__ util.h <span class="desc">include</span></div>
+    <div class="row" style="padding-left:30px"><span class="tw"></span><span class="tw" style="color:#9DA5B4">?</span>stdint.h <span class="desc">&lt;unresolved&gt;</span></div>
+  </div>
+</div>
+</div>
+
+<script>
+// Inline the SVG icons (replace placeholders).
+const ICONS = {
+  __FN__:   svg('#c191e6', 'M3 8h10 M5 4 L11 12 M11 4 L5 12'),
+  __VAR__:  svg('#75beff', 'M4 5h8 M4 8h8 M4 11h5'),
+  __FILE__: '<svg class="gi" viewBox="0 0 16 16"><path fill="#8a9099" d="M4 1h5l3 3v11H4z"/><path fill="#6b7178" d="M9 1v3h3z"/></svg>',
+  __FOLDER__: '<svg class="gi" viewBox="0 0 16 16"><path fill="#c09553" d="M2 4h4l1.5 1.5H14V13H2z"/></svg>',
+  __INC__:  svg('#8FC79F', 'M11 4 L5 8 L11 12 M5 8 H13'),   // call-incoming (left arrow)
+  __OUT__:  svg('#8FC79F', 'M5 4 L11 8 L5 12 M3 8 H11'),    // call-outgoing (right arrow)
+};
+function svg(color, d) {
+  return '<svg class="gi" viewBox="0 0 16 16" fill="none" stroke="'+color+'" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="'+d+'"/></svg>';
+}
+document.body.innerHTML = document.body.innerHTML.replace(/__FN__|__VAR__|__FILE__|__FOLDER__|__INC__|__OUT__/g, (m) => ICONS[m]);
+// rcode styling
+const st = document.createElement('style');
+st.textContent = '.rcode{font-family:Consolas,monospace;font-size:12px;color:#cfcfcf} .rcode b{color:#fff;background:rgba(120,160,255,.20);border-radius:2px}';
+document.head.appendChild(st);
+// show frame by hash (default hero)
+function showFrame() {
+  document.querySelectorAll('.frame').forEach(f => f.classList.remove('show'));
+  const id = (location.hash || '#hero').slice(1);
+  (document.getElementById(id) || document.getElementById('hero')).classList.add('show');
+}
+window.addEventListener('hashchange', showFrame); showFrame();
+</script>
+</body>
+</html>

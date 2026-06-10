@@ -1,0 +1,9 @@
+node_modules/
+out/
+*.vsix
+.vscode-test/
+example-xl/
+example-xxl/
+# Generated locally with absolute, machine-specific paths (clangd works without
+# it via compile_flags.txt; regenerate with `node tools/gen-large-example.js`).
+example-large/compile_commands.json

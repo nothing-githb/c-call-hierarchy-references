@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <!-- caller -->
+  <circle cx="12" cy="3.6" r="1.5" fill="currentColor" stroke="none"/>
+  <path d="M12 5.2V8.3"/>
+  <!-- focus function -->
+  <circle cx="12" cy="11" r="2.5"/>
+  <circle cx="12" cy="11" r="0.7" fill="currentColor" stroke="none"/>
+  <!-- callees: read (hollow) / write (filled) -->
+  <path d="M10.2 12.9 7.3 16.6"/>
+  <circle cx="5.7" cy="18.9" r="2.2"/>
+  <path d="M13.8 12.9 16.7 16.6"/>
+  <circle cx="18.3" cy="18.9" r="2.2" fill="currentColor"/>
+</svg>

@@ -1,0 +1,139 @@
+# Changelog
+
+All notable changes to **C Call Hierarchy** are documented here.
+This project adheres to [Semantic Versioning](https://semver.org/).
+
+## [0.1.11]
+
+### Changed
+- New **monochrome icon** (transparent background): a branching call tree with directional arrows that
+  also reads as the read/write reference split — a hollow callee (read) and a filled callee (write).
+  The Activity Bar icon and README screenshots were updated to match.
+
+## [0.1.10]
+
+### Fixed
+- **Address-of** detection now handles a parenthesised base whose member is taken outside the parens —
+  `&(cfg).field` (≡ `&(cfg.field)`): the field is flagged address-of and `cfg` is no longer mis-flagged.
+  Adds to the already-supported `&(x)`, `&(cfg.field)`, `&((x))`, `&( x )`, `&(p->a->b)`, `&(arr[i].field)`.
+
+## [0.1.9]
+
+### Added
+- **Browse without leaving the panel.** Selecting a call-tree node now **previews** the call site
+  (or, for the root, the definition) while keeping focus in the tree — so you can keep arrowing up and
+  down the hierarchy. An inline **Open in editor** (`$(go-to-file)`) action on each node opens the
+  location for real and moves focus to the editor.
+
+## [0.1.8]
+
+### Fixed
+- Invoking call hierarchy on a function's **header declaration** (e.g. a prototype in a `.h`) now
+  re-anchors the root to its **definition**. Previously the root stayed on the declaration, so clangd
+  stripped the call-site ranges of its outgoing calls (they live in the `.c`), and clicking a callee
+  opened the callee's *definition* instead of the place it is called. Callee → call site now works
+  regardless of whether you start from the declaration or the definition. Verified under clangd and cpptools.
+
+## [0.1.7]
+
+### Tests
+- Added an integration test that drives the **real `CallTreeProvider`** and asserts the actual
+  `command.arguments` each node opens: **root → definition**, **caller → call site** (in the caller),
+  **callee → call site** (in the inspected function). Verified under **both clangd and cpptools**.
+  `activate()` now returns the tree provider so tests can exercise it (no runtime change).
+
+## [0.1.6]
+
+### Fixed
+- Clicking the **root** node (the function itself, at the top of the tree) now opens the function's
+  **definition** instead of its header declaration. The root uses the call-hierarchy item's own
+  (definition-preferring) location directly, rather than running go-to-definition — which, when invoked
+  from the definition, could bounce to the prototype in the header.
+
+### Tests
+- The integration suites now also assert the root's click target resolves to the `.c` definition (not a
+  header), verified under **both clangd and cpptools**.
+
+## [0.1.5]
+
+### Changed
+- Hardened the click-to-open command (no longer relies on `instanceof` to tell a call site from a
+  definition).
+
+### Tests
+- Added **real clangd integration tests** that drive the configured clangd over LSP and the VS Code
+  command layer, verifying that outgoing calls keep their `fromRanges` and that a callee's click target
+  lands on the line that actually calls it — across several functions in the example workspace. The
+  headless LSP test runs on every package; `npm run test:vscode` runs the full VS Code + clangd suite.
+
+## [0.1.4]
+
+### Fixed
+- Clicking a node always jumps to the **call site** (where the function is called) when one exists —
+  for callees too. Only when clangd provides no call site does it fall back to the symbol's
+  **definition** (resolved decl→def), never a raw header declaration.
+- The **callee list** no longer drops functions whose clangd item resolves to a header prototype:
+  for the outgoing direction, file `excludeGlobs`/`includeGlobs` no longer hide header-anchored callees
+  (the name/path search filter still applies).
+
+## [0.1.3]
+
+### Changed
+- The call tree now shows **one direction at a time** — callers (incoming) **or** callees (outgoing) —
+  toggled from the view title, instead of both branches at once. The subtitle shows the active direction.
+
+## [0.1.2]
+
+### Changed
+- **Address-of** now also recognises parenthesised forms: `&(x)`, `&(cfg.field)`, `&((x))`.
+- The read/write, address-of and search-matching logic moved to a dependency-free module with a
+  unit-test suite that runs automatically on every package (`npm test` via `vscode:prepublish`).
+
+## [0.1.1]
+
+### Fixed
+- Call-tree click now jumps to the **actual call site in the correct file**. Outgoing (Calls) nodes
+  previously opened the callee's file at the *caller's* line number — they now open the calling
+  function's file at the call.
+- **Address-of** (`&a.b.c`) now targets the chain's last component (`c`), with `a`/`b` read — and
+  correctly excludes bitwise `a & x` / logical `a && x` and handles `return &x` / `sizeof &x`.
+
+## [0.1.0] — Initial release
+
+### Call hierarchy
+- Shows **callers and callees at once** (Callers / Calls branches per root) with per-branch counts.
+- Caller **parameter-type signatures** in the node description and full declaration in the tooltip
+  (`cCallHierarchy.showSignatures`).
+- **×N** badge and tooltip list when clangd merges multiple call sites into one node.
+- Cycle-safe, depth-capped (`cCallHierarchy.maxDepth`); theme symbol colors.
+- Click → the call site is selected, centered and briefly flashed.
+
+### Find references (read / write)
+- Dedicated tree with **read / write / address-of / declaration** letter icons (`r` / `w` / `&` / `d`)
+  and a neutral dot. `&x` (address taken — a potential write through the pointer) is flagged distinctly.
+- Group by **folder** (nested, compacted) or flat by **file**; toggle with the title action.
+- **Kind filter chips** (`w r d ·`) in the Filter pane.
+- The matched symbol is highlighted on each result line.
+- Read/write from clangd's `documentHighlight` roles, with a syntactic fallback.
+
+### Header includes
+- `#include` hierarchy with **includes** / **included-by** directions and unresolved-include leaves.
+- Visual **include graph** webview.
+- Pure text scanner — works without a compile database; `cCallHierarchy.includePaths` for `<...>` resolution.
+
+### Filtering
+- Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
+  plus `excludeGlobs` / `includeGlobs` settings.
+
+[0.1.11]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.11
+[0.1.10]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.10
+[0.1.9]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.9
+[0.1.8]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.8
+[0.1.7]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.7
+[0.1.6]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.6
+[0.1.5]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.5
+[0.1.4]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.4
+[0.1.3]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.3
+[0.1.2]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.2
+[0.1.1]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.1
+[0.1.0]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.0

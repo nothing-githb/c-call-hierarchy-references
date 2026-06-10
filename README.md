@@ -1,7 +1,7 @@
 <h1 align="center">C Call Hierarchy & References</h1>
 
 <p align="center">
-  See <b>who calls what</b>, <b>who reads vs writes</b> a symbol, and <b>what includes what</b> in C/C++ —
+  See <b>who calls what</b> and <b>who reads vs writes</b> a symbol in C/C++ —
   powered by your <a href="https://clangd.llvm.org/">clangd</a>.
 </p>
 
@@ -18,8 +18,8 @@
 </p>
 
 clangd already knows your code. **C Call Hierarchy & References** re-presents what it knows the way you actually want
-it: callers **and** callees at once, references split into **reads vs writes**, third-party noise filtered
-out, and headers laid out as an include tree — without leaving the sidebar.
+it: callers **and** callees at once, references split into **reads vs writes**, and third-party noise
+filtered out — without leaving the sidebar.
 
 > It does **not** run its own language server. It consumes clangd's results through VS Code's provider
 > commands, so accuracy equals clangd's accuracy — with zero extra setup.
@@ -54,19 +54,8 @@ a syntactic fallback when the provider doesn't tag a role.
 
 <br clear="right">
 
-### Header includes
-<img alt="Header include hierarchy"
-     src="assets/includes.png" width="400" align="right">
-
-**Show include hierarchy** on a file builds a tree of which headers it `#include`s — toggle to
-**included-by** to see what pulls in the current header. Unresolved (system) includes are shown but not
-expanded, and an **include graph** webview visualises the whole thing. This view is clangd-independent —
-it scans `#include` directives directly, so it works even without a compile database.
-
-<br clear="right">
-
 ### One filter for everything
-A fixed **Filter** pane at the top searches by **function name or path** across all three views, live:
+A fixed **Filter** pane at the top searches by **function name or path** across both views, live:
 
 | You type | Match |
 | --- | --- |
@@ -81,8 +70,6 @@ A fixed **Filter** pane at the top searches by **function name or path** across 
 - The **clangd** extension (`llvm-vs-code-extensions.vscode-clangd`), installed and active — for the call
   hierarchy, references and signatures.
 - A clangd index for your project: a `compile_commands.json` or `compile_flags.txt`.
-- The **Header Includes** view needs no clangd — only the files on disk (set `cCallHierarchyReferences.includePaths`
-  to resolve `<...>` includes).
 
 > If both **clangd** and **ms-vscode.cpptools** are installed, make sure clangd is the active C/C++
 > provider for best read/write accuracy.
@@ -91,26 +78,23 @@ A fixed **Filter** pane at the top searches by **function name or path** across 
 
 1. Install this extension and **clangd**, and open a C/C++ project that clangd can index.
 2. Click the **C Call Hierarchy & References** icon in the Activity Bar.
-3. Right-click a function → **Show call hierarchy** / **Find references**, or a file → **Show include
-   hierarchy**.
+3. Right-click a function → **Show call hierarchy** / **Find references**.
 
 ## ⚙️ Settings
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `cCallHierarchyReferences.maxDepth` | `32` | Max expansion/walk depth for the call and include trees. |
+| `cCallHierarchyReferences.maxDepth` | `32` | Max expansion/walk depth for the call tree. |
 | `cCallHierarchyReferences.excludeGlobs` | `[]` | Deny-list of path globs hidden from all views. |
 | `cCallHierarchyReferences.includeGlobs` | `[]` | Allow-list of path globs; empty = show everything. |
 | `cCallHierarchyReferences.showSignatures` | `true` | Show caller parameter types in the call tree. |
-| `cCallHierarchyReferences.includePaths` | `[]` | Extra include search dirs for resolving `#include <...>`. |
 
 ## 🧠 How it works
 
 For call hierarchy, references and signatures the extension calls VS Code's built-in provider commands
 (`prepareCallHierarchy`, `provideIncoming/OutgoingCalls`, `executeReferenceProvider`,
 `executeDocumentHighlights`, `executeHoverProvider`) which delegate to **your clangd**. No second language
-server is spawned. The Header Includes feature is a self-contained `#include` scanner that runs even
-without a compile database (≈200 ms for a 2,000-file project, cached afterwards).
+server is spawned.
 
 ## ❓ FAQ
 

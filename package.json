@@ -1,8 +1,8 @@
 {
   "name": "c-call-hierarchy-references",
   "displayName": "C Call Hierarchy & References",
-  "description": "C/C++ call hierarchy (toggle callers / callees), read/write find-references, and a #include explorer — powered by your clangd.",
-  "version": "0.1.13",
+  "description": "C/C++ call hierarchy (toggle callers / callees) and read/write find-references — powered by your clangd.",
+  "version": "0.1.14",
   "publisher": "halistahasahin",
   "license": "MIT",
   "author": {
@@ -37,9 +37,7 @@
     "clangd",
     "call hierarchy",
     "find references",
-    "read write",
-    "include graph",
-    "header"
+    "read write"
   ],
   "activationEvents": [
     "onLanguage:c",
@@ -53,13 +51,13 @@
         "cCallHierarchyReferences.maxDepth": {
           "type": "number",
           "default": 32,
-          "description": "Maximum expansion/walk depth for the call tree and include tree (guards against unbounded recursion)."
+          "description": "Maximum expansion/walk depth for the call tree (guards against unbounded recursion)."
         },
         "cCallHierarchyReferences.excludeGlobs": {
           "type": "array",
           "items": { "type": "string" },
           "default": [],
-          "description": "Deny-list of path globs hidden from all views (call tree, references, includes, graph). Always wins over the include allow-list. Example: [\"**/test/**\", \"**/third_party/**\"]."
+          "description": "Deny-list of path globs hidden from the call tree and references. Always wins over the allow-list (includeGlobs). Example: [\"**/test/**\", \"**/third_party/**\"]."
         },
         "cCallHierarchyReferences.includeGlobs": {
           "type": "array",
@@ -71,12 +69,6 @@
           "type": "boolean",
           "default": true,
           "description": "Show each function's parameter types (its signature) in the call-tree node description and tooltip."
-        },
-        "cCallHierarchyReferences.includePaths": {
-          "type": "array",
-          "items": { "type": "string" },
-          "default": [],
-          "description": "Extra include search directories used to resolve #include <...> directives for the Header Includes view. Relative paths resolve against each workspace folder. Example: [\"include\", \"vendor/lib/include\"]."
         }
       }
     },
@@ -152,30 +144,6 @@
         "title": "Filter to this folder",
         "category": "C Call Hierarchy & References",
         "icon": "$(filter)"
-      },
-      {
-        "command": "cCallHierarchyReferences.showIncludeHierarchy",
-        "title": "Show include hierarchy",
-        "category": "C Call Hierarchy & References",
-        "icon": "$(list-tree)"
-      },
-      {
-        "command": "cCallHierarchyReferences.toggleIncludeDirection",
-        "title": "Toggle includes / included-by",
-        "category": "C Call Hierarchy & References",
-        "icon": "$(arrow-swap)"
-      },
-      {
-        "command": "cCallHierarchyReferences.refreshIncludes",
-        "title": "Rescan #include graph",
-        "category": "C Call Hierarchy & References",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "cCallHierarchyReferences.openIncludeGraph",
-        "title": "Open include graph",
-        "category": "C Call Hierarchy & References",
-        "icon": "$(graph)"
       }
     ],
     "menus": {
@@ -187,11 +155,6 @@
         },
         {
           "command": "cCallHierarchyReferences.findReferences",
-          "when": "editorLangId == c || editorLangId == cpp",
-          "group": "navigation@9"
-        },
-        {
-          "command": "cCallHierarchyReferences.showIncludeHierarchy",
           "when": "editorLangId == c || editorLangId == cpp",
           "group": "navigation@9"
         }
@@ -221,21 +184,6 @@
           "command": "cCallHierarchyReferences.clearReferences",
           "when": "view == cCallHierarchyReferences.references",
           "group": "navigation@5"
-        },
-        {
-          "command": "cCallHierarchyReferences.toggleIncludeDirection",
-          "when": "view == cCallHierarchyReferences.includes",
-          "group": "navigation@1"
-        },
-        {
-          "command": "cCallHierarchyReferences.openIncludeGraph",
-          "when": "view == cCallHierarchyReferences.includes",
-          "group": "navigation@2"
-        },
-        {
-          "command": "cCallHierarchyReferences.refreshIncludes",
-          "when": "view == cCallHierarchyReferences.includes",
-          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -243,27 +191,12 @@
           "command": "cCallHierarchyReferences.openReferenceInEditor",
           "when": "view == cCallHierarchyReferences.tree && viewItem =~ /^(root|call|recursive)$/",
           "group": "inline"
-        },
-        {
-          "command": "cCallHierarchyReferences.showIncludeHierarchy",
-          "when": "view == cCallHierarchyReferences.includes && viewItem == includeFile",
-          "group": "navigation@1"
-        },
-        {
-          "command": "cCallHierarchyReferences.filterToFolder",
-          "when": "view == cCallHierarchyReferences.includes && viewItem == includeFile",
-          "group": "navigation@2"
         }
       ],
       "explorer/context": [
         {
           "command": "cCallHierarchyReferences.filterToFolder",
           "when": "explorerResourceIsFolder",
-          "group": "navigation@9"
-        },
-        {
-          "command": "cCallHierarchyReferences.showIncludeHierarchy",
-          "when": "resourceLangId == c || resourceLangId == cpp",
           "group": "navigation@9"
         }
       ]
@@ -293,11 +226,6 @@
           "id": "cCallHierarchyReferences.references",
           "name": "References",
           "type": "tree"
-        },
-        {
-          "id": "cCallHierarchyReferences.includes",
-          "name": "Header Includes",
-          "type": "tree"
         }
       ]
     },
@@ -305,10 +233,6 @@
       {
         "view": "cCallHierarchyReferences.references",
         "contents": "Find all references to a C/C++ symbol, badged read / write / declaration.\n[Find References](command:cCallHierarchyReferences.findReferences)"
-      },
-      {
-        "view": "cCallHierarchyReferences.includes",
-        "contents": "Show which headers a C/C++ file includes (and which files include it).\n[Show Include Hierarchy](command:cCallHierarchyReferences.showIncludeHierarchy)"
       }
     ]
   },

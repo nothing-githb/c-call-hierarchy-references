@@ -385,10 +385,6 @@ void mac_user(int x) {
 // ---- clangd config: compile_flags.txt (for headers) + compile_commands.json -
 w(path.join(ROOT, 'compile_flags.txt'), `-Iinclude\n-std=c11\n-Wall\n`);
 
-// Let the Header Includes scanner resolve <...>/"..." includes under include/.
-fs.mkdirSync(path.join(ROOT, '.vscode'), { recursive: true });
-w(path.join(ROOT, '.vscode', 'settings.json'), JSON.stringify({ 'cCallHierarchyReferences.includePaths': ['include'] }, null, 2) + '\n');
-
 // Absolute paths (clangd needs them to build its background index for outgoing
 // calls). This file is therefore machine-specific and is git-ignored — it is
 // regenerated locally by this script; nothing absolute is committed.

@@ -201,37 +201,5 @@ async function references() {
   await render('references.png', w, h, s);
 }
 
-// =================== INCLUDES ===================
-async function includes() {
-  const w = 400, h = 320, sw = 400;
-  let s = `<rect width="${w}" height="${h}" fill="${C.side}"/>`;
-  s += sectHead(16, 22, 'Header Includes');
-  s += txt(18, 40, 'app.h — includes', { fill: C.dim, size: 11 });
-  const rows = [
-    { ind: 8, tw: 1, nm: 'app.h', sel: 1 },
-    { ind: 30, tw: 1, nm: 'svc_0.h', desc: 'include' },
-    { ind: 52, tw: 1, nm: 'drv_0.h', desc: 'include' },
-    { ind: 74, tw: 1, nm: 'hal_0.h', desc: 'include' },
-    { ind: 96, tw: 1, nm: 'bus.h', desc: 'include' },
-    { ind: 118, tw: -1, nm: 'common.h', desc: 'include' },
-    { ind: 74, tw: -1, nm: 'util.h', desc: 'include' },
-    { ind: 30, tw: -1, unres: 1, nm: 'stdint.h', desc: '<unresolved>' },
-  ];
-  let y = 50; const lh = 24;
-  rows.forEach((r) => {
-    const cy = y + lh / 2;
-    if (r.sel) { s += `<rect x="0" y="${y}" width="${w}" height="${lh}" fill="${C.sel}"/><rect x="0" y="${y}" width="${w}" height="${lh}" fill="none" stroke="${C.selb}"/>`; }
-    let ix = r.ind;
-    if (r.tw === 1) s += tw(ix, cy, true);
-    ix += 16;
-    if (r.unres) { s += `<text x="${ix + 4}" y="${cy + 4}" font-family="${UI}" font-size="12" fill="${C.gray}">?</text>`; ix += 18; }
-    else { s += icoFile(ix, cy); ix += 20; }
-    s += txt(ix, cy, r.nm, { fill: r.unres ? C.dim : C.fg });
-    if (r.desc) s += txt(ix + r.nm.length * 7.2 + 10, cy, r.desc, { fill: r.unres ? C.gray : C.dim, size: 11 });
-    y += lh;
-  });
-  await render('includes.png', w, h, s);
-}
-
 const ICON_B64 = fs.readFileSync(path.resolve(__dirname, '..', 'icons', 'icon.png')).toString('base64');
-(async () => { await hero(); await references(); await includes(); })();
+(async () => { await hero(); await references(); })();

@@ -3,6 +3,13 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.14]
+
+### Removed
+- The **Header Includes** view, its commands (show include hierarchy, toggle includes / included-by,
+  rescan, open include graph), and the `cCallHierarchyReferences.includePaths` setting. The extension now
+  focuses on the call hierarchy and read/write references.
+
 ## [0.1.13]
 
 ### Changed
@@ -141,6 +148,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
   plus `excludeGlobs` / `includeGlobs` settings.
 
+[0.1.14]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.14
 [0.1.13]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.13
 [0.1.12]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.12
 [0.1.11]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.11

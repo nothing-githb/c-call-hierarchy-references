@@ -2,9 +2,6 @@ import * as vscode from 'vscode';
 import * as h from './hierarchy';
 import { CallTreeProvider, CallNode, nodeTarget } from './treeProvider';
 import { ReferencesProvider } from './referencesProvider';
-import { IncludeIndex, buildIncludeGraph } from './includes';
-import { IncludeTreeProvider } from './includesProvider';
-import { GraphView } from './graphView';
 import { FilterPanelProvider } from './filterPanel';
 import {
   initFilterState,
@@ -30,16 +27,7 @@ export function activate(context: vscode.ExtensionContext): { tree: CallTreeProv
   });
   refProvider.attachView(refView);
 
-  // --- Include hierarchy view ---
-  const includeIndex = new IncludeIndex();
-  const includeProvider = new IncludeTreeProvider(includeIndex);
-  const includeView = vscode.window.createTreeView('cCallHierarchyReferences.includes', {
-    treeDataProvider: includeProvider,
-    showCollapseAll: true,
-  });
-  includeProvider.attachView(includeView);
-
-  context.subscriptions.push(callView, refView, includeView);
+  context.subscriptions.push(callView, refView);
 
   // Transient "flash" highlight so a clicked reference stands out from nearby ones.
   const flash = vscode.window.createTextEditorDecorationType({
@@ -87,7 +75,6 @@ export function activate(context: vscode.ExtensionContext): { tree: CallTreeProv
     await vscode.commands.executeCommand('setContext', 'cCallHierarchyReferences.pathFilterActive', active);
     tree.refresh();
     refProvider.refresh();
-    includeProvider.refresh();
     filterPanel?.setValue(getRuntimeFilter());
     callView.message = active ? `Filtered to: ${getRuntimeFilter()}` : undefined;
   };
@@ -104,12 +91,6 @@ export function activate(context: vscode.ExtensionContext): { tree: CallTreeProv
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(FilterPanelProvider.viewType, filterPanel),
   );
-
-  const ensureIndex = (title: string) =>
-    vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title },
-      () => includeIndex.build(),
-    );
 
   // Reflect the call-tree direction in the view subtitle + a context key (button).
   const syncCallDir = (): void => {
@@ -189,42 +170,6 @@ export function activate(context: vscode.ExtensionContext): { tree: CallTreeProv
       filterPanel?.updateKinds();
     }),
 
-    // ---- Include hierarchy ----
-    vscode.commands.registerCommand('cCallHierarchyReferences.showIncludeHierarchy', async (arg?: unknown) => {
-      const uri = uriFromArg(arg) ?? vscode.window.activeTextEditor?.document.uri;
-      if (!uri) {
-        vscode.window.showInformationMessage('Open or select a C/C++ file first.');
-        return;
-      }
-      if (!includeIndex.built || !includeIndex.knows(uri)) {
-        await ensureIndex('Scanning #include graph…');
-      }
-      includeProvider.setRoot(uri);
-      await vscode.commands.executeCommand('cCallHierarchyReferences.includes.focus');
-    }),
-
-    vscode.commands.registerCommand('cCallHierarchyReferences.toggleIncludeDirection', () =>
-      includeProvider.toggleDirection(),
-    ),
-
-    vscode.commands.registerCommand('cCallHierarchyReferences.refreshIncludes', async () => {
-      await ensureIndex('Rescanning #include graph…');
-      includeProvider.refresh();
-    }),
-
-    vscode.commands.registerCommand('cCallHierarchyReferences.openIncludeGraph', async () => {
-      const root = includeProvider.getRootUri();
-      if (!root) {
-        vscode.window.showInformationMessage('Run "Show include hierarchy" first.');
-        return;
-      }
-      if (!includeIndex.built) {
-        await ensureIndex('Scanning #include graph…');
-      }
-      const model = buildIncludeGraph(includeIndex, root, includeProvider.getDirection());
-      GraphView.show(model, context.extensionUri);
-    }),
-
     // ---- Path filter (live: applies as you type, reverts on Escape) ----
     vscode.commands.registerCommand('cCallHierarchyReferences.setPathFilter', () => {
       const original = getRuntimeFilter();
@@ -301,10 +246,6 @@ export function activate(context: vscode.ExtensionContext): { tree: CallTreeProv
       ) {
         tree.refresh();
         refProvider.refresh();
-        includeProvider.refresh();
-      }
-      if (e.affectsConfiguration('cCallHierarchyReferences.includePaths')) {
-        includeIndex.built = false; // force a rescan on next use
       }
     }),
   );

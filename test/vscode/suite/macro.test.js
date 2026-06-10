@@ -15,7 +15,7 @@ suite(`macro-hidden calls [${PROVIDER}]`, () => {
   test('mac_user: calls hidden in macros resolve as callees', async function () {
     this.timeout(240000);
     await vscode.extensions.getExtension(PROVIDER_EXT).activate();
-    const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy');
+    const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy-references');
     const tree = (await me.activate()).tree;
 
     const root = vscode.workspace.workspaceFolders[0].uri;

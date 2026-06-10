@@ -5,11 +5,11 @@ One-time setup, then a single command to release. Run everything from the extens
 
 ## 0. Prerequisites
 
-- A **GitHub repo** at `https://github.com/nothing-githb/c-call-hierarchy` with this code pushed to the
-  **`master`** branch. The README references screenshots with **relative** paths (`assets/*.png`) — these
+- A **GitHub repo** at `https://github.com/nothing-githb/c-call-hierarchy-references` with this code pushed to the
+  **`main`** branch. The README references screenshots with **relative** paths (`assets/*.png`) — these
   ship inside the `.vsix` (so the installed extension's detail page shows them) and resolve on GitHub once
   pushed. On the **Marketplace gallery**, vsce rewrites relative image paths to absolute GitHub-raw URLs
-  using the `repository` field and the branch you pass — so publish with `--githubBranch master` (step 3),
+  using the `repository` field and the branch you pass — so publish with `--githubBranch main` (step 3),
   and make sure `assets/` is committed/pushed.
 - `@vscode/vsce` (already a dev dependency): `npx vsce --version`.
 
@@ -33,19 +33,19 @@ The `publisher` in `package.json` is **`halistahasahin`** — it must match a re
 ```sh
 npx vsce login halistahasahin                  # paste the PAT when prompted
 npm run compile                                # build out/
-npx vsce publish --githubBranch master         # packages + uploads 0.1.0; rewrites image paths to master
+npx vsce publish --githubBranch main         # packages + uploads 0.1.0; rewrites image paths to main
 ```
 
 To cut a new version, bump it and let vsce tag it:
 
 ```sh
-npx vsce publish patch --githubBranch master   # 0.1.0 -> 0.1.1 (or: minor / major / 1.2.3)
+npx vsce publish patch --githubBranch main   # 0.1.0 -> 0.1.1 (or: minor / major / 1.2.3)
 ```
 
 ## 4. Verify before publishing
 
 ```sh
-npx vsce package --no-dependencies   # writes c-call-hierarchy-0.1.0.vsix
+npx vsce package --no-dependencies   # writes c-call-hierarchy-references-<version>.vsix
 npx vsce ls                          # lists exactly what ships
 ```
 

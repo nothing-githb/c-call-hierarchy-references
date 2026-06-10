@@ -19,7 +19,7 @@ let tree;
 async function getTree() {
   if (tree) return tree;
   await vscode.extensions.getExtension(PROVIDER_EXT).activate();
-  const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy');
+  const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy-references');
   tree = (await me.activate()).tree;
   return tree;
 }

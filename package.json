@@ -1,8 +1,8 @@
 {
-  "name": "c-call-hierarchy",
-  "displayName": "C Call Hierarchy",
+  "name": "c-call-hierarchy-references",
+  "displayName": "C Call Hierarchy & References",
   "description": "C/C++ call hierarchy (toggle callers / callees), read/write find-references, and a #include explorer — powered by your clangd.",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "publisher": "halistahasahin",
   "license": "MIT",
   "author": {
@@ -11,12 +11,12 @@
   "icon": "icons/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nothing-githb/c-call-hierarchy.git"
+    "url": "https://github.com/nothing-githb/c-call-hierarchy-references.git"
   },
   "bugs": {
-    "url": "https://github.com/nothing-githb/c-call-hierarchy/issues"
+    "url": "https://github.com/nothing-githb/c-call-hierarchy-references/issues"
   },
-  "homepage": "https://github.com/nothing-githb/c-call-hierarchy#readme",
+  "homepage": "https://github.com/nothing-githb/c-call-hierarchy-references#readme",
   "galleryBanner": {
     "color": "#16202b",
     "theme": "dark"
@@ -48,7 +48,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "C Call Hierarchy",
+      "title": "C Call Hierarchy & References",
       "properties": {
         "cCallHierarchy.maxDepth": {
           "type": "number",
@@ -84,97 +84,97 @@
       {
         "command": "cCallHierarchy.showHierarchy",
         "title": "Show call hierarchy for symbol under cursor",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(type-hierarchy)"
       },
       {
         "command": "cCallHierarchy.findReferences",
         "title": "Find references (read/write)",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(references)"
       },
       {
         "command": "cCallHierarchy.toggleDirection",
         "title": "Toggle incoming / outgoing calls",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(arrow-swap)"
       },
       {
         "command": "cCallHierarchy.openReferenceInEditor",
         "title": "Open in editor",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(go-to-file)"
       },
       {
         "command": "cCallHierarchy.refresh",
         "title": "Refresh call hierarchy",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(refresh)"
       },
       {
         "command": "cCallHierarchy.refreshReferences",
         "title": "Refresh references",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(refresh)"
       },
       {
         "command": "cCallHierarchy.clearReferences",
         "title": "Clear references",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(clear-all)"
       },
       {
         "command": "cCallHierarchy.toggleReferenceGrouping",
         "title": "Toggle reference grouping (file / folder)",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(list-tree)"
       },
       {
         "command": "cCallHierarchy.filterReferenceKinds",
         "title": "Filter references by kind (read / write)",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(filter)"
       },
       {
         "command": "cCallHierarchy.setPathFilter",
         "title": "Set path filter…",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(filter)"
       },
       {
         "command": "cCallHierarchy.clearPathFilter",
         "title": "Clear path filter",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(filter-filled)"
       },
       {
         "command": "cCallHierarchy.filterToFolder",
         "title": "Filter to this folder",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(filter)"
       },
       {
         "command": "cCallHierarchy.showIncludeHierarchy",
         "title": "Show include hierarchy",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(list-tree)"
       },
       {
         "command": "cCallHierarchy.toggleIncludeDirection",
         "title": "Toggle includes / included-by",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(arrow-swap)"
       },
       {
         "command": "cCallHierarchy.refreshIncludes",
         "title": "Rescan #include graph",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(refresh)"
       },
       {
         "command": "cCallHierarchy.openIncludeGraph",
         "title": "Open include graph",
-        "category": "C Call Hierarchy",
+        "category": "C Call Hierarchy & References",
         "icon": "$(graph)"
       }
     ],
@@ -272,7 +272,7 @@
       "activitybar": [
         {
           "id": "cCallHierarchyContainer",
-          "title": "C Call Hierarchy",
+          "title": "C Call Hierarchy & References",
           "icon": "icons/activity.svg"
         }
       ]
@@ -326,7 +326,11 @@
   "devDependencies": {
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.75.0",
+    "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^3.9.1",
+    "glob": "^11.0.0",
+    "mocha": "^10.7.3",
+    "sharp": "^0.33.5",
     "typescript": "^5.3.0"
   }
 }

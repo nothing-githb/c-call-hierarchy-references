@@ -1,7 +1,14 @@
 # Changelog
 
-All notable changes to **C Call Hierarchy** are documented here.
+All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
+
+## [0.1.12]
+
+### Changed
+- Renamed to **C Call Hierarchy & References** (extension id `c-call-hierarchy-references`) to avoid a
+  display-name clash with another extension. The command and setting identifiers (`cCallHierarchy.*`) are
+  unchanged, so keybindings and settings keep working.
 
 ## [0.1.11]
 
@@ -125,15 +132,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
   plus `excludeGlobs` / `includeGlobs` settings.
 
-[0.1.11]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.11
-[0.1.10]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.10
-[0.1.9]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.9
-[0.1.8]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.8
-[0.1.7]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.7
-[0.1.6]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.6
-[0.1.5]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.5
-[0.1.4]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.4
-[0.1.3]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.3
-[0.1.2]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.2
-[0.1.1]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.1
-[0.1.0]: https://github.com/nothing-githb/c-call-hierarchy/releases/tag/v0.1.0
+[0.1.12]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.12
+[0.1.11]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.11
+[0.1.10]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.10
+[0.1.9]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.9
+[0.1.8]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.8
+[0.1.7]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.7
+[0.1.6]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.6
+[0.1.5]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.5
+[0.1.4]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.4
+[0.1.3]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.3
+[0.1.2]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.2
+[0.1.1]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.1
+[0.1.0]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.0

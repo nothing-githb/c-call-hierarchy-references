@@ -22,7 +22,7 @@ suite(`real CallTreeProvider — click targets [${PROVIDER}]`, () => {
     this.timeout(240000);
 
     await vscode.extensions.getExtension(PROVIDER_EXT).activate();
-    const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy');
+    const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy-references');
     assert.ok(me, 'extension under test is present');
     const api = await me.activate();
     assert.ok(api && api.tree, 'activate() exposes the tree provider');
@@ -100,7 +100,7 @@ suite(`real CallTreeProvider — click targets [${PROVIDER}]`, () => {
   test('invoked on a header declaration → callee click goes to the call site', async function () {
     this.timeout(240000);
     await vscode.extensions.getExtension(PROVIDER_EXT).activate();
-    const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy');
+    const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy-references');
     const tree = (await me.activate()).tree;
 
     const root = vscode.workspace.workspaceFolders[0].uri;
@@ -166,7 +166,7 @@ suite(`real CallTreeProvider — click targets [${PROVIDER}]`, () => {
   test('"Open in editor" action navigates to the node target and activates the editor', async function () {
     this.timeout(180000);
     await vscode.extensions.getExtension(PROVIDER_EXT).activate();
-    const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy');
+    const me = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy-references');
     const t = (await me.activate()).tree;
 
     const root = vscode.workspace.workspaceFolders[0].uri;

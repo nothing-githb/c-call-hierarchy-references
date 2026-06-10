@@ -97,7 +97,7 @@ async function main() {
       // disable the INSTALLED copy so the dev build (extensionDevelopmentPath) is
       // the one that activates and exposes its tree provider for the test
       '--disable-extension',
-      'halistahasahin.c-call-hierarchy',
+      'halistahasahin.c-call-hierarchy-references',
       '--disable-workspace-trust',
       '--skip-welcome',
       '--skip-release-notes',

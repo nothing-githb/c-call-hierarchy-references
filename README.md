@@ -1,4 +1,4 @@
-<h1 align="center">C Call Hierarchy</h1>
+<h1 align="center">C Call Hierarchy & References</h1>
 
 <p align="center">
   See <b>who calls what</b>, <b>who reads vs writes</b> a symbol, and <b>what includes what</b> in C/C++ —
@@ -6,18 +6,18 @@
 </p>
 
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=halistahasahin.c-call-hierarchy"><img alt="Marketplace version" src="https://img.shields.io/visual-studio-marketplace/v/halistahasahin.c-call-hierarchy?color=2d6cdf&label=Marketplace"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=halistahasahin.c-call-hierarchy-references"><img alt="Marketplace version" src="https://img.shields.io/visual-studio-marketplace/v/halistahasahin.c-call-hierarchy-references?color=2d6cdf&label=Marketplace"></a>
   <img alt="VS Code" src="https://img.shields.io/badge/VS%20Code-%5E1.75-2d6cdf">
   <img alt="requires clangd" src="https://img.shields.io/badge/requires-clangd-8a56e2">
   <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-3FB950">
 </p>
 
 <p align="center">
-  <img alt="C Call Hierarchy — toggle callers/callees, parameter signatures, and a previewed call site"
+  <img alt="C Call Hierarchy & References — toggle callers/callees, parameter signatures, and a previewed call site"
        src="assets/hero.png" width="900">
 </p>
 
-clangd already knows your code. **C Call Hierarchy** re-presents what it knows the way you actually want
+clangd already knows your code. **C Call Hierarchy & References** re-presents what it knows the way you actually want
 it: callers **and** callees at once, references split into **reads vs writes**, third-party noise filtered
 out, and headers laid out as an include tree — without leaving the sidebar.
 
@@ -90,7 +90,7 @@ A fixed **Filter** pane at the top searches by **function name or path** across 
 ## 🚀 Getting started
 
 1. Install this extension and **clangd**, and open a C/C++ project that clangd can index.
-2. Click the **C Call Hierarchy** icon in the Activity Bar.
+2. Click the **C Call Hierarchy & References** icon in the Activity Bar.
 3. Right-click a function → **Show call hierarchy** / **Find references**, or a file → **Show include
    hierarchy**.
 

@@ -3,6 +3,20 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.21]
+
+### Fixed
+- **Enter on a ×N node could feel "stuck" on the previously walked node — hardened.** The Enter keybinding
+  now fires for the whole call tree (no longer gated on an async context key), and `Next call site` always
+  acts on the **currently selected** node, so after walking one node, arrowing to another function and
+  pressing **Enter** reliably switches to *that* node.
+
+### Tests
+- Added an integration test that drives the **real view selection** (select a node, press Enter with no
+  argument — exactly what the keybinding does) and asserts Enter acts on the selected node and switches when
+  the selection changes. The earlier test only called the command with an explicit node, so it could not
+  catch a selection-path regression.
+
 ## [0.1.20]
 
 ### Added
@@ -216,6 +230,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
   plus `excludeGlobs` / `includeGlobs` settings.
 
+[0.1.21]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.21
 [0.1.20]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.20
 [0.1.19]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.19
 [0.1.18]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.18

@@ -4,6 +4,8 @@
  *  - re-clicking "Open in editor" walks a ×N node's call sites, per-node, with
  *    no walk-state leaking into another node (the v0.1.18 fix)
  *  - pressing Enter walks a ×N node's call sites in-tree, per-node, no leak (v0.1.19)
+ *  - Enter acts on the SELECTED node; selecting another via the view switches to
+ *    it (real selection path, not an explicit-node call) (v0.1.21)
  *  - an active search filter highlights the matched part of a call-tree label (v0.1.20)
  *  - References in folder grouping render the top folder levels Expanded
  * Drives the REAL providers exposed by the extension's activate(). */
@@ -184,11 +186,55 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
       // one node per call site (cpptools): a single-site node stays at its one site.
       const one = callees.find((n) => n.fromRanges.length === 1);
       const a = await enter(one);
-      assert.deepStrictEqual(a, { index: 0, total: 1 }, 'single-site node: Enter stays at its only site');
+      assert.strictEqual(a.index, 0, 'single-site node: Enter stays at its only site');
+      assert.strictEqual(a.total, 1, 'single-site total is 1');
       const b = await enter(one);
-      assert.deepStrictEqual(b, { index: 0, total: 1 }, 'single-site node: Enter stays at 1/1');
+      assert.strictEqual(b.index, 0, 'single-site node: Enter stays at 1/1');
       console.log('  single-site nodes: Enter stays at 1/1 ✔');
     }
+  });
+
+  test('Enter acts on the SELECTED node; selecting another switches to it — real selection path (v0.1.21)', async function () {
+    this.timeout(180000);
+    // This is the scenario the explicit-node test missed: walk a ×N node, then
+    // change the VIEW SELECTION (as the up/down arrows do) and press Enter with NO
+    // argument — exactly what the Enter keybinding does — and assert Enter lands on
+    // the newly selected node, not the previously walked one.
+    assert.ok(api.callView, 'activate() exposes callView');
+    const rootNode = await dispatchRoots(tree);
+    if (tree.getDirection() !== 'outgoing') tree.toggleDirection();
+    await api.callView.reveal(rootNode, { expand: true });
+    const callees = await tree.getChildren(rootNode);
+    const A = callees.find((n) => n.fromRanges.length > 1); // a ×N node to walk
+    const B = callees.find((n) => n !== A && n.callUri && n.fromRanges.length > 0); // a distinct sibling
+    if (!A || !B) {
+      console.log('  need a ×N node + a distinct sibling — skipped (provider returned neither)');
+      return;
+    }
+
+    // NO argument → reads the view selection, exactly like the Enter keybinding.
+    const pressEnter = () => vscode.commands.executeCommand('cCallHierarchyReferences.nextCallSite');
+    const sitesOf = (n) => n.fromRanges.map((rg) => `${n.callUri.toString()}#${rg.start.line}`);
+    const aSites = sitesOf(A);
+    const bSites = sitesOf(B);
+    const where = (r) => (r ? `${r.uri}#${r.line}` : 'undefined');
+
+    // Select A and press Enter a couple of times → walks A's call sites.
+    await api.callView.reveal(A, { select: true, focus: true });
+    const a1 = await pressEnter();
+    assert.ok(a1 && aSites.includes(where(a1)), `Enter acted on the selected ×N node A (got ${where(a1)})`);
+    await pressEnter(); // walk once more
+
+    // Now SELECT B (what arrowing up/down does) and press Enter — it must switch
+    // to B and NOT keep walking A. This is the exact bug reported against 0.1.17.
+    await api.callView.reveal(B, { select: true, focus: true });
+    const rb = await pressEnter();
+    assert.ok(rb && bSites.includes(where(rb)), `after selecting B, Enter acted on B (got ${where(rb)})`);
+    assert.ok(
+      !aSites.includes(where(rb)),
+      'Enter did NOT keep walking the previously selected node A (no cross-node leak)',
+    );
+    console.log(`  select A→Enter walks A; select B→Enter lands on B (${where(rb)}), not A ✔`);
   });
 
   test('Active filter highlights the matched part of a call-tree node label (v0.1.20)', async function () {

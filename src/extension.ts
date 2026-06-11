@@ -16,6 +16,7 @@ export function activate(
   tree: CallTreeProvider;
   references: ReferencesProvider;
   setFilter: (query?: string) => void;
+  callView: vscode.TreeView<CallNode>;
 } {
   initFilterState(context);
 
@@ -89,18 +90,16 @@ export function activate(
   let openCursor: { key: string; index: number } | undefined;
   let enterCursor: { key: string; index: number } | undefined;
 
-  // Pin the Enter-walk cursor to the selected node and flag ×N selections, so the
-  // Enter keybinding only overrides Enter on a node that actually has sites to
-  // walk. Both keep Enter acting on the CURRENTLY selected node — never a stale one.
+  // Pin the Enter-walk cursor to the selected node (index 0 = the site the
+  // arrow-preview shows) on every selection change, so the first Enter advances
+  // to the next site and Enter always acts on the CURRENTLY selected node — never
+  // a stale one. (The Enter keybinding fires for the whole tree, not gated on a
+  // context key, so there's no async-context-key window where Enter could act on
+  // the wrong node.)
   context.subscriptions.push(
     callView.onDidChangeSelection((e) => {
       const sel = e.selection[0];
       enterCursor = sel ? { key: cursorKey(sel), index: 0 } : undefined;
-      void vscode.commands.executeCommand(
-        'setContext',
-        'cCallHierarchyReferences.selectedMulti',
-        (sel?.fromRanges.length ?? 0) > 1,
-      );
     }),
   );
 
@@ -210,14 +209,18 @@ export function activate(
         return { index: r.index, total: r.total };
       },
     ),
-    // Keyboard Enter on a ×N node walks its merged call sites — one per press,
-    // wrapping — previewing each while focus stays in the tree (bound to Enter via
-    // a keybinding gated on `selectedMulti`). Reads the SELECTED node (or an
+    // Enter in the call tree acts on the SELECTED node (Enter is bound to this
+    // for the whole tree): a ×N node walks its merged call sites one per press,
+    // wrapping; any other node previews its call site / definition. Either way it
+    // previews while focus stays in the tree. Reads callView.selection (or an
     // explicit node, for tests) + the per-node enterCursor, so arrowing to another
-    // node and pressing Enter walks THAT node, never the previously walked one.
+    // node and pressing Enter acts on THAT node, never the previously walked one.
+    // Returns the resolved target so tests can assert which node Enter landed on.
     vscode.commands.registerCommand(
       'cCallHierarchyReferences.nextCallSite',
-      async (node?: CallNode): Promise<{ index: number; total: number } | undefined> => {
+      async (
+        node?: CallNode,
+      ): Promise<{ index: number; total: number; uri: string; line: number } | undefined> => {
         const target = node ?? callView.selection[0];
         if (!target) {
           return undefined;
@@ -233,7 +236,7 @@ export function activate(
           vscode.window.setStatusBarMessage(`Call site ${r.index + 1} / ${r.total}`, 2500);
         }
         await revealAt(loc.uri, loc.range, { preserveFocus: true, preview: true });
-        return { index: r.index, total: r.total };
+        return { index: r.index, total: r.total, uri: loc.uri.toString(), line: loc.range.start.line };
       },
     ),
     vscode.commands.registerCommand('cCallHierarchyReferences.toggleReferenceGrouping', () => {
@@ -341,6 +344,9 @@ export function activate(
       setRuntimeFilter(query);
       void applyPathFilter();
     },
+    // Exposed so integration tests can drive the real view selection (reveal +
+    // select) and verify Enter acts on the selected node.
+    callView,
   };
 }
 

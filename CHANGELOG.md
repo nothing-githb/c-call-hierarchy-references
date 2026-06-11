@@ -3,6 +3,21 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.22]
+
+### Fixed
+- **Enter now follows the arrow keys on a ×N node.** Walking a ×N node with **Enter**, then pressing the
+  **up/down arrow** to another function and pressing **Enter**, now switches to *that* function. The arrow
+  keys move the tree's keyboard **focus** but (by VS Code design) do **not** update the view's *selection*,
+  so the previous versions — which read the selection — kept acting on the node you started from. Enter now
+  acts on the node the arrow keys moved to (recorded from each node's own activation), not the stale
+  selection.
+
+### Tests
+- Added an integration test that drives the **focus path** (each node's `TreeItem.command`, exactly what an
+  arrow press fires) without ever changing the selection — the axis the live bug lived on, which the earlier
+  selection-based test could not reproduce.
+
 ## [0.1.21]
 
 ### Fixed
@@ -230,6 +245,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
   plus `excludeGlobs` / `includeGlobs` settings.
 
+[0.1.22]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.22
 [0.1.21]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.21
 [0.1.20]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.20
 [0.1.19]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.19

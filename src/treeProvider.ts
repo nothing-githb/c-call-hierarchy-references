@@ -105,15 +105,15 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
       sig = await h.signature(item);
     }
 
-    // When a search filter is active, tint the part it matches. The NAME is the
-    // (highlightable) label. When the query matches the PATH, the path is also
-    // surfaced in the label so its match can be tinted — VS Code only supports
-    // highlights on the label, not the description (and only the matched range can
-    // be tinted, not the rest greyed). The description is left UNCHANGED — it keeps
-    // showing the full "params · path" in grey — so nothing else about the node's
-    // appearance changes.
+    // When a search filter is active and it matches the PATH, the path is moved
+    // into the (highlightable) label so the match can be tinted — and the
+    // description is then DROPPED entirely ("not needed while filtering"), so the
+    // path is shown only once, in the label. (VS Code only tints the matched range
+    // on a label; it can't grey the rest, so the path in the label is in the normal
+    // colour.) A name-only match just tints the name and keeps the description.
     const query = getRuntimeFilter();
     let label: string | vscode.TreeItemLabel = item.name;
+    let pathInLabel = false;
     if (query) {
       const nameHl = queryHighlights(item.name, query);
       const pathHl = queryHighlights(rel, query);
@@ -127,6 +127,7 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
             ...pathHl.map(([s, e]): [number, number] => [s + off, e + off]),
           ],
         };
+        pathInLabel = true;
       } else if (nameHl.length) {
         label = { label: item.name, highlights: nameHl };
       }
@@ -145,10 +146,10 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
     // the call-site count so 3 calls don't look like 1.
     const calls = node.fromRanges.length;
     const countBadge = calls > 1 ? `×${calls}  ·  ` : '';
-    // Description is unchanged from before (uses the raw path) — only the label
-    // gains the highlighted path.
+    // The path moved into the label → drop the description entirely; otherwise show
+    // the usual "×N · params · path".
     const base = sig?.params ? `${sig.params}  ·  ${relRaw}` : item.detail || relRaw;
-    ti.description = countBadge + base;
+    ti.description = pathInLabel ? '' : countBadge + base;
     ti.iconPath = iconFor(item.kind);
 
     const tip = new vscode.MarkdownString();

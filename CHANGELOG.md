@@ -3,20 +3,19 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.1.22]
+## [0.1.23]
 
 ### Fixed
-- **Enter now follows the arrow keys on a ×N node.** Walking a ×N node with **Enter**, then pressing the
-  **up/down arrow** to another function and pressing **Enter**, now switches to *that* function. The arrow
-  keys move the tree's keyboard **focus** but (by VS Code design) do **not** update the view's *selection*,
-  so the previous versions — which read the selection — kept acting on the node you started from. Enter now
-  acts on the node the arrow keys moved to (recorded from each node's own activation), not the stale
-  selection.
+- **Reverted the 0.1.22 change, which broke Enter entirely.** 0.1.22 tried to make Enter follow the arrow
+  keys by recording the focused node from each node's activation command — but VS Code does **not** run that
+  command on arrow navigation, so the recorded node was never set and Enter could end up doing nothing.
+  Enter again reliably steps a node's ×N call sites; select the node (click it) first.
 
-### Tests
-- Added an integration test that drives the **focus path** (each node's `TreeItem.command`, exactly what an
-  arrow press fires) without ever changing the selection — the axis the live bug lived on, which the earlier
-  selection-based test could not reproduce.
+### Known limitation
+- Switching which node Enter walks by **arrow keys alone** isn't possible: VS Code's tree moves keyboard
+  *focus* with the arrows but does not update the view *selection*, and gives the extension no signal on
+  arrow navigation. Click a node to make Enter act on it, or use the inline **Open in editor** action (which
+  walks a node's sites per-click regardless of selection).
 
 ## [0.1.21]
 
@@ -245,7 +244,6 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
   plus `excludeGlobs` / `includeGlobs` settings.
 
-[0.1.22]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.22
 [0.1.21]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.21
 [0.1.20]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.20
 [0.1.19]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.19

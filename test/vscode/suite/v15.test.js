@@ -6,8 +6,6 @@
  *  - pressing Enter walks a ×N node's call sites in-tree, per-node, no leak (v0.1.19)
  *  - Enter acts on the SELECTED node; selecting another via the view switches to
  *    it (real selection path, not an explicit-node call) (v0.1.21)
- *  - Enter follows arrow FOCUS (the node's TreeItem.command), not the stale
- *    selection — the axis the live keyboard bug lived on (v0.1.22)
  *  - an active search filter highlights the matched part of a call-tree label (v0.1.20)
  *  - References in folder grouping render the top folder levels Expanded
  * Drives the REAL providers exposed by the extension's activate(). */
@@ -237,58 +235,6 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
       'Enter did NOT keep walking the previously selected node A (no cross-node leak)',
     );
     console.log(`  select A→Enter walks A; select B→Enter lands on B (${where(rb)}), not A ✔`);
-  });
-
-  test('Enter follows arrow FOCUS, not selection — drives the node command directly (v0.1.22)', async function () {
-    this.timeout(180000);
-    // THE LIVE BUG the reveal-based test above could NOT reproduce: arrow keys move
-    // the tree's FOCUS — running each node's TreeItem.command (previewNode) with
-    // that node — but do NOT update callView.selection. So this drives the node's
-    // OWN command directly (exactly what an arrow key fires) and NEVER calls
-    // reveal/select, then presses Enter (nextCallSite, no arg). Old code read the
-    // stale selection[0] and kept walking A; the fix reads the node previewNode
-    // recorded. With the old code this test FAILS; with the fix it passes.
-    const rootNode = await dispatchRoots(tree);
-    if (tree.getDirection() !== 'outgoing') tree.toggleDirection();
-    const callees = await tree.getChildren(rootNode);
-    const A = callees.find((n) => n.fromRanges.length > 1); // a ×N node to walk
-    const B = callees.find((n) => n !== A && n.callUri && n.fromRanges.length > 0); // a distinct sibling
-    if (!A || !B) {
-      console.log('  need a ×N node + a distinct sibling — skipped');
-      return;
-    }
-
-    // Each node's command must be previewNode carrying ITS OWN node — that's what
-    // VS Code invokes on arrow focus, and what makes Enter follow the focus.
-    const tiA = await tree.getTreeItem(A);
-    assert.strictEqual(tiA.command.command, 'cCallHierarchyReferences.previewNode', 'node command is previewNode');
-    assert.strictEqual(tiA.command.arguments[0], A, 'previewNode carries its own node');
-
-    // "Arrow onto n" = run n's TreeItem.command, the way VS Code does on focus —
-    // WITHOUT touching callView.selection.
-    const arrowTo = async (n) => {
-      const ti = await tree.getTreeItem(n);
-      return vscode.commands.executeCommand(ti.command.command, ...ti.command.arguments);
-    };
-    const enter = () => vscode.commands.executeCommand('cCallHierarchyReferences.nextCallSite'); // no arg = keybinding
-    const sitesOf = (n) => n.fromRanges.map((rg) => `${n.callUri.toString()}#${rg.start.line}`);
-    const aSites = sitesOf(A);
-    const bSites = sitesOf(B);
-    const where = (r) => (r ? `${r.uri}#${r.line}` : 'undefined');
-
-    await arrowTo(A); // focus A (no selection change)
-    const a1 = await enter();
-    assert.ok(a1 && aSites.includes(where(a1)), `Enter walked the focused ×N node A (got ${where(a1)})`);
-    await enter(); // walk A once more
-
-    await arrowTo(B); // focus B — live selection would still be A; activeNode is now B
-    const rb = await enter();
-    assert.ok(rb && bSites.includes(where(rb)), `Enter acted on the focused node B (got ${where(rb)})`);
-    assert.ok(
-      !aSites.includes(where(rb)),
-      'Enter did NOT keep walking the previously focused node A (the live arrow-focus bug)',
-    );
-    console.log(`  arrow A→Enter walks A; arrow B→Enter lands on B (${where(rb)}), not A ✔`);
   });
 
   test('Active filter highlights the matched part of a call-tree node label (v0.1.20)', async function () {

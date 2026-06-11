@@ -4,9 +4,12 @@
  *  - re-clicking "Open in editor" walks a ×N node's call sites, per-node, with
  *    no walk-state leaking into another node (the v0.1.18 fix)
  *  - pressing Enter walks a ×N node's call sites in-tree, per-node, no leak (v0.1.19)
+ *  - Enter targets the FOCUSED node: each node's command is nextCallSite([node])
+ *    and no Enter keybinding overrides it (the v0.1.24 fix for arrow + Enter)
  *  - Enter acts on the SELECTED node; selecting another via the view switches to
  *    it (real selection path, not an explicit-node call) (v0.1.21)
  *  - an active search filter highlights the matched part of a call-tree label (v0.1.20)
+ *  - a filter that matches the PATH highlights it in the label too (v0.1.25)
  *  - References in folder grouping render the top folder levels Expanded
  * Drives the REAL providers exposed by the extension's activate(). */
 const assert = require('assert');
@@ -90,6 +93,48 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
         ? `  ${multi.item.name} ×${multi.fromRanges.length} → contextValue Multi ✔`
         : `  provider returns one node per call site (no ×N merge) — no Multi nodes ✔`,
     );
+  });
+
+  test('Enter targets the FOCUSED node: each node\'s command is nextCallSite([node]) and NO Enter keybinding overrides it (v0.1.24)', async function () {
+    this.timeout(180000);
+    // This is the wiring that makes Enter act on the node the arrow keys moved to:
+    // VS Code runs the FOCUSED node's own TreeItem.command on Enter. The actual
+    // arrow-key press can't be simulated headlessly, but these two invariants are
+    // exactly what that behaviour rests on — and what regressed in 0.1.17–0.1.23:
+    //   (1) every call-tree node's command is nextCallSite carrying ITS OWN node;
+    //   (2) there is NO `enter` keybinding hijacking it to read the (arrow-stale)
+    //       selection (the 0.1.17 keybinding that caused the bug).
+    const rootNode = await dispatchRoots(tree);
+    if (tree.getDirection() !== 'outgoing') tree.toggleDirection();
+    const callees = await tree.getChildren(rootNode);
+    assert.ok(callees.length > 0, 'dispatch has callees');
+
+    for (const n of [rootNode, ...callees.slice(0, 6)]) {
+      const ti = await tree.getTreeItem(n);
+      assert.ok(ti.command, `${n.item.name}: node has a command`);
+      assert.strictEqual(
+        ti.command.command,
+        'cCallHierarchyReferences.nextCallSite',
+        `${n.item.name}: node command is nextCallSite (runs for the focused node on Enter)`,
+      );
+      assert.strictEqual(
+        ti.command.arguments && ti.command.arguments[0],
+        n,
+        `${n.item.name}: the command carries its OWN node (so Enter can't act on a stale one)`,
+      );
+    }
+
+    // No `enter` keybinding may override the focused-node command (that was the
+    // 0.1.17–0.1.23 bug: a keybinding read callView.selection, which arrows don't
+    // update). Assert the manifest contributes no Enter binding.
+    const pkg = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy-references').packageJSON;
+    const enterBindings = (pkg.contributes.keybindings || []).filter((k) => (k.key || '').toLowerCase() === 'enter');
+    assert.strictEqual(
+      enterBindings.length,
+      0,
+      `no Enter keybinding may hijack the focused-node command (found: ${JSON.stringify(enterBindings)})`,
+    );
+    console.log(`  every node command = nextCallSite([node]); no Enter keybinding overrides it ✔`);
   });
 
   test('Open in editor walks a ×N node\'s call sites — per-node, no leak (v0.1.18)', async function () {
@@ -271,6 +316,35 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
       }
     } finally {
       api.setFilter(undefined); // don't leak the filter into later tests
+    }
+  });
+
+  test('Active filter highlights a PATH match in the label too (v0.1.25)', async function () {
+    this.timeout(180000);
+    const rootNode = await dispatchRoots(tree);
+    if (tree.getDirection() !== 'outgoing') tree.toggleDirection();
+    const callees = await tree.getChildren(rootNode);
+    // bus_write / bus_read live in src/bus.c. "src/bus" matches the PATH but NOT
+    // the function name — so the highlight must surface on the path (in the label,
+    // since VS Code can't highlight the description where the path normally sits).
+    const bus = callees.find((n) => /bus_write|bus_read/.test(n.item.name));
+
+    try {
+      api.setFilter('src/bus');
+      if (bus) {
+        const ti = await tree.getTreeItem(bus);
+        assert.ok(ti.label && typeof ti.label === 'object', 'path-matching node label is a TreeItemLabel');
+        const text = ti.label.label;
+        assert.ok(/src\/bus/i.test(text), `the path is shown in the label (got "${text}")`);
+        const hl = ti.label.highlights || [];
+        const hit = hl.find(([s, e]) => text.slice(s, e).toLowerCase() === 'src/bus');
+        assert.ok(hit, `a highlight covers the path match "src/bus" (highlights ${JSON.stringify(hl)} over "${text}")`);
+        console.log(`  ${text}: path highlight [${hit[0]},${hit[1]}] = "${text.slice(hit[0], hit[1])}" ✔`);
+      } else {
+        console.log('  no bus_write/bus_read callee — skipped');
+      }
+    } finally {
+      api.setFilter(undefined);
     }
   });
 

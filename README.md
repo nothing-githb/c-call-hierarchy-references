@@ -66,8 +66,8 @@ A fixed **Filter** pane at the top searches by **function name or path** across 
 | `src/net/**` | **glob** |
 | `/drv_\d+/` | **regular expression** |
 
-Matches are also **highlighted in the call tree** — the part of each function name the filter matched is
-tinted, so it's clear at a glance why a node is shown.
+Matches are also **highlighted in the call tree** — the part of the function **name** (or, when the query
+matches the **path**, the path shown next to the name) is tinted, so it's clear at a glance why a node is shown.
 
 ---
 
@@ -91,9 +91,9 @@ tinted, so it's clear at a glance why a node is shown.
 | Setting | Default | Description |
 | --- | --- | --- |
 | `cCallHierarchyReferences.maxDepth` | `32` | Max expansion/walk depth for the call tree. |
-| `cCallHierarchyReferences.excludeGlobs` | `[]` | Deny-list of path globs hidden from all views. |
-| `cCallHierarchyReferences.includeGlobs` | `[]` | Allow-list of path globs; empty = show everything. |
 | `cCallHierarchyReferences.showSignatures` | `true` | Show caller parameter types in the call tree. |
+
+> Filtering by name/path is done live in the **Filter** pane — there are no glob settings.
 
 ## 🧠 How it works
 

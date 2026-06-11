@@ -1,6 +1,7 @@
 /*
- * Offline 256x256 PNG icon generator (no image libs): renders a monochrome,
- * transparent-background mark that fuses the two features —
+ * Offline 256x256 PNG icon generator (no image libs): renders a WHITE mark on a
+ * rounded BLUE background (so the icon stands out in the Extensions list /
+ * Marketplace). The mark fuses the two features —
  *   • a branching call tree (hierarchy), and
  *   • directional arrows + a read/write split (find references).
  * Drawn at 4x and box-downsampled for anti-aliasing, then PNG-encoded by hand
@@ -16,7 +17,7 @@ const SS = 4;
 const BIG = SIZE * SS; // 1024
 const buf = new Uint8Array(BIG * BIG * 4); // RGBA, transparent
 
-const M = [0xcd, 0xd6, 0xe0]; // single monochrome tone
+const M = [0xff, 0xff, 0xff]; // white mark (on the blue background)
 
 function blend(x, y, r, g, b, a) {
   if (x < 0 || y < 0 || x >= BIG || y >= BIG || a <= 0) return;
@@ -103,6 +104,19 @@ const root = [BIG * 0.5, BIG * 0.42];
 const readN = [BIG * 0.235, BIG * 0.74];   // a "read" callee (hollow ring)
 const writeN = [BIG * 0.765, BIG * 0.74];  // a "write" callee (filled)
 
+// ---- Rounded blue background (drawn first, behind the mark) -----------------
+const BG = [0x1f, 0x6f, 0xeb]; // blue
+const RAD = BIG * 0.18;        // corner radius
+const AA = SS;                 // ~1 output-px soft edge
+for (let y = 0; y < BIG; y++)
+  for (let x = 0; x < BIG; x++) {
+    const qx = Math.abs(x - BIG / 2) - (BIG / 2 - RAD);
+    const qy = Math.abs(y - BIG / 2) - (BIG / 2 - RAD);
+    const d = Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - RAD;
+    const cov = d <= -AA ? 255 : d >= AA ? 0 : Math.round((255 * (AA - d)) / (2 * AA));
+    if (cov > 0) blend(x, y, BG[0], BG[1], BG[2], cov);
+  }
+
 // caller (incoming) flows DOWN into the root; root flows DOWN into the callees.
 edgeTo(caller[0], caller[1], root[0], root[1], NR, W, HEAD, M);
 edgeTo(root[0], root[1], readN[0], readN[1], NR, W, HEAD, M);
@@ -155,4 +169,4 @@ const png = Buffer.concat([
   chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0)),
 ]);
 fs.writeFileSync(OUT, png);
-console.log(`Wrote ${OUT} (${png.length} bytes, ${SIZE}x${SIZE}, monochrome/transparent)`);
+console.log(`Wrote ${OUT} (${png.length} bytes, ${SIZE}x${SIZE}, white mark on rounded blue)`);

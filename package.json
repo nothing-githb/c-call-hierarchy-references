@@ -2,7 +2,7 @@
   "name": "c-call-hierarchy-references",
   "displayName": "C Call Hierarchy & References",
   "description": "C/C++ call hierarchy (toggle callers / callees) and read/write find-references — works with clangd (recommended) or Microsoft C/C++.",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "publisher": "halistahasahin",
   "license": "MIT",
   "author": {
@@ -52,18 +52,6 @@
           "type": "number",
           "default": 32,
           "description": "Maximum expansion/walk depth for the call tree (guards against unbounded recursion)."
-        },
-        "cCallHierarchyReferences.excludeGlobs": {
-          "type": "array",
-          "items": { "type": "string" },
-          "default": [],
-          "description": "Deny-list of path globs hidden from the call tree and references. Always wins over the allow-list (includeGlobs). Example: [\"**/test/**\", \"**/third_party/**\"]."
-        },
-        "cCallHierarchyReferences.includeGlobs": {
-          "type": "array",
-          "items": { "type": "string" },
-          "default": [],
-          "description": "Allow-list of path globs. When non-empty, only matching files are shown (AND-ed with the interactive path filter; excludeGlobs still wins). Empty = show everything."
         },
         "cCallHierarchyReferences.showSignatures": {
           "type": "boolean",

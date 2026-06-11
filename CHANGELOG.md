@@ -3,6 +3,22 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.25]
+
+### Added
+- **Filter matches in the path are highlighted too.** When a **Filter** query matches a call-tree node's
+  **path** (e.g. `src/bus`), the path is now shown next to the name in the node label with the matched part
+  tinted — previously only name matches were highlighted (the path sits in the description, which VS Code
+  can't highlight, so it's surfaced in the label when it matches).
+
+### Changed
+- **New icon:** a white call-tree mark on a rounded **blue** background, so the extension stands out in the
+  Extensions list and Marketplace (was a faint monochrome mark on a transparent background).
+
+### Removed
+- The **`excludeGlobs`** and **`includeGlobs`** settings. The fixed **Filter** pane already filters by name
+  or path live (contains / glob / `/regex/`), so the static glob lists were redundant.
+
 ## [0.1.24]
 
 ### Changed
@@ -254,6 +270,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
   plus `excludeGlobs` / `includeGlobs` settings.
 
+[0.1.25]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.25
 [0.1.24]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.24
 [0.1.23]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.23
 [0.1.21]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.21

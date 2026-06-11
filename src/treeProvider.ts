@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as h from './hierarchy';
-import { passesFilter, matchesRuntimeFilter, maxDepth, getRuntimeFilter } from './filter';
+import { matchesRuntimeFilter, maxDepth, getRuntimeFilter } from './filter';
 import { queryHighlights } from './textutil';
 
 function showSignatures(): boolean {
@@ -84,14 +84,8 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
       p = h
         .step(item, this.direction)
         .then((next) =>
-          next.filter((n) =>
-            // Outgoing callee uris are often header prototypes; gating file
-            // visibility on the header would drop legitimate callees, so keep
-            // only the name/path search for that direction.
-            this.direction === 'incoming'
-              ? passesFilter(n.item.name, n.item.uri)
-              : matchesRuntimeFilter(n.item.name, n.item.uri),
-          ),
+          // The Filter box matches the function name OR its path.
+          next.filter((n) => matchesRuntimeFilter(n.item.name, n.item.uri)),
         )
         .catch(() => []);
       this.stepCache.set(cacheKey, p);
@@ -103,29 +97,62 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
     const item = node.item;
     const recursive = node.ancestry.has(node.key);
     const leaf = node.kind === 'call' && (node.depth >= maxDepth() || recursive);
-    // When a search filter is active, tint the part of the name it matches (the
-    // standard list filter-match highlight) so it's clear *why* a node is shown.
+    // Forward slashes so the path matches the filter (which normalises) and reads
+    // consistently across platforms.
+    const rel = vscode.workspace.asRelativePath(item.uri, false).replace(/\\/g, '/');
+
+    let sig: h.Signature | undefined;
+    if (showSignatures()) {
+      sig = await h.signature(item);
+    }
+
+    // When a search filter is active, tint the part it matches (the standard list
+    // match-highlight). The name is the (highlightable) label; the path normally
+    // lives in the description, which VS Code can't highlight — so when the filter
+    // matches the PATH, show the path in the label too (next to the name) and tint
+    // it there.
     const query = getRuntimeFilter();
-    const hl = query ? queryHighlights(item.name, query) : [];
+    let label: string | vscode.TreeItemLabel = item.name;
+    let pathInLabel = false;
+    if (query) {
+      const nameHl = queryHighlights(item.name, query);
+      const pathHl = queryHighlights(rel, query);
+      if (pathHl.length) {
+        const sep = '    ';
+        const off = item.name.length + sep.length;
+        label = {
+          label: `${item.name}${sep}${rel}`,
+          highlights: [
+            ...nameHl,
+            ...pathHl.map(([s, e]): [number, number] => [s + off, e + off]),
+          ],
+        };
+        pathInLabel = true;
+      } else if (nameHl.length) {
+        label = { label: item.name, highlights: nameHl };
+      }
+    }
+
     const ti = new vscode.TreeItem(
-      hl.length ? { label: item.name, highlights: hl } : item.name,
+      label,
       node.kind === 'root'
         ? vscode.TreeItemCollapsibleState.Expanded
         : leaf
           ? vscode.TreeItemCollapsibleState.None
           : vscode.TreeItemCollapsibleState.Collapsed,
     );
-    const rel = vscode.workspace.asRelativePath(item.uri, false);
 
-    let sig: h.Signature | undefined;
-    if (showSignatures()) {
-      sig = await h.signature(item);
-    }
     // clangd merges multiple call sites to the same function into one node; show
     // the call-site count so 3 calls don't look like 1.
     const calls = node.fromRanges.length;
     const countBadge = calls > 1 ? `×${calls}  ·  ` : '';
-    const base = sig?.params ? `${sig.params}  ·  ${rel}` : item.detail || rel;
+    // The path moves into the label when it's the filter match, so don't repeat it
+    // in the description there.
+    const base = pathInLabel
+      ? sig?.params || item.detail || ''
+      : sig?.params
+        ? `${sig.params}  ·  ${rel}`
+        : item.detail || rel;
     ti.description = countBadge + base;
     ti.iconPath = iconFor(item.kind);
 

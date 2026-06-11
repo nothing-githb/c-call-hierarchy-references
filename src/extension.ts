@@ -309,9 +309,8 @@ export function activate(
     // ---- React to settings ----
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (
-        e.affectsConfiguration('cCallHierarchyReferences.includeGlobs') ||
-        e.affectsConfiguration('cCallHierarchyReferences.excludeGlobs') ||
-        e.affectsConfiguration('cCallHierarchyReferences.showSignatures')
+        e.affectsConfiguration('cCallHierarchyReferences.showSignatures') ||
+        e.affectsConfiguration('cCallHierarchyReferences.maxDepth')
       ) {
         tree.refresh();
         refProvider.refresh();

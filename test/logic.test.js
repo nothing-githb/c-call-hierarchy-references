@@ -5,7 +5,7 @@
  */
 const path = require('path');
 const T = require(path.join(__dirname, '..', 'out', 'textutil.js'));
-const { RefKind, isAddressOf, heuristicKind, matchGlob, matchesQuery } = T;
+const { RefKind, isAddressOf, heuristicKind, matchGlob, matchesQuery, nextSiteIndex } = T;
 
 let fail = 0;
 function eq(actual, expected, msg) {
@@ -122,6 +122,32 @@ eq(matchesQuery('bus', ['bus_write', 'x.c']), true, 'contains name');
 eq(matchesQuery('net', ['foo', 'src/net/x.c']), true, 'contains path');
 eq(matchesQuery('zzz', ['foo', 'src/x.c']), false, 'contains none');
 eq(matchesQuery('bus*', ['bus_write', 'x.c']), true, 'glob name');
+
+console.log('# call-site cursor (×N walk — per-node, no leak)');
+{
+  const A = 'A|file', B = 'B|file';
+  // Re-clicking "Open in editor" on the SAME ×N node walks its sites & wraps.
+  let c = nextSiteIndex(undefined, A, 3);
+  eq([c.index, c.total], [0, 3], 'A: first click → site 1/3');
+  c = nextSiteIndex(c, A, 3);
+  eq(c.index, 1, 'A: re-click → site 2');
+  c = nextSiteIndex(c, A, 3);
+  eq(c.index, 2, 'A: re-click → site 3');
+  c = nextSiteIndex(c, A, 3);
+  eq(c.index, 0, 'A: re-click wraps → site 1');
+  // Switching to a DIFFERENT node restarts at site 0 (the reported bug fix:
+  // walk state must not leak from one node into another).
+  let walkedA = nextSiteIndex(nextSiteIndex(undefined, A, 3), A, 3); // A now at site 2
+  eq(walkedA.index, 1, 'A: walked to site 2 before switching');
+  const onB = nextSiteIndex(walkedA, B, 2);
+  eq(onB.index, 0, 'switch A→B restarts at site 1 (no leak from A)');
+  const backA = nextSiteIndex(onB, A, 3);
+  eq(backA.index, 0, 'switch B→A restarts at site 1 (cursor was on B)');
+  // A single-site node always opens its one site, no matter the prior cursor.
+  eq(nextSiteIndex(undefined, A, 1).index, 0, 'single site → 0');
+  eq(nextSiteIndex({ key: A, index: 0 }, A, 1).index, 0, 'single site stays at 0');
+  eq(nextSiteIndex({ key: B, index: 5 }, A, 0).index, 0, 'no sites (total 0) → 0');
+}
 
 console.log(fail === 0 ? `\nALL PASS (logic)` : `\n${fail} FAILED`);
 process.exit(fail ? 1 : 0);

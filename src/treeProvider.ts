@@ -149,8 +149,9 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
       title: 'Open',
       arguments: [t.uri, t.range],
     };
-    // `...Multi` marks a node with several merged call sites — enables the
-    // inline "Go to call site…" picker to browse between them.
+    // `...Multi` marks a ×N node (several merged call sites): its inline "Open in
+    // editor" action walks the sites, one per click. (Informational marker — the
+    // tooltip above lists every site.)
     const multi = node.fromRanges.length > 1 ? 'Multi' : '';
     ti.contextValue = (recursive ? 'recursive' : node.kind) + multi;
     return ti;

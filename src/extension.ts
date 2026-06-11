@@ -3,6 +3,7 @@ import * as h from './hierarchy';
 import { CallTreeProvider, CallNode, nodeTarget } from './treeProvider';
 import { ReferencesProvider } from './referencesProvider';
 import { FilterPanelProvider } from './filterPanel';
+import { nextSiteIndex } from './textutil';
 import {
   initFilterState,
   setRuntimeFilter,
@@ -70,42 +71,11 @@ export function activate(
     }, 1500);
   };
 
-  // Browse a node's several merged call sites with the keyboard (F4 / Shift+F4):
-  // cycle through its fromRanges, previewing each; focus stays in the tree.
-  let callSiteCursor: { key: string; index: number } | undefined;
-  const cycleCallSite = (
-    delta: number,
-    node?: CallNode,
-  ): { index: number; total: number } | undefined => {
-    node = node ?? callView.selection[0];
-    if (!node || !node.callUri || node.fromRanges.length === 0) {
-      return undefined;
-    }
-    const sites = node.fromRanges;
-    const key = `${node.key}|${node.callUri.toString()}`;
-    // A fresh node's click target is site 0, so the first "next" lands on site 1.
-    const prev = callSiteCursor && callSiteCursor.key === key ? callSiteCursor.index : 0;
-    const index = (prev + delta + sites.length) % sites.length;
-    callSiteCursor = { key, index };
-    void revealAt(node.callUri, sites[index], { preserveFocus: true, preview: true });
-    if (sites.length > 1) {
-      vscode.window.setStatusBarMessage(`Call site ${index + 1} / ${sites.length}`, 2500);
-    }
-    return { index, total: sites.length };
-  };
-
-  // Enter on a ×N node walks its call sites (see the keybinding). Reset the cursor
-  // when the selection changes, and expose a context key gating that keybinding.
-  context.subscriptions.push(
-    callView.onDidChangeSelection((e) => {
-      callSiteCursor = undefined;
-      void vscode.commands.executeCommand(
-        'setContext',
-        'cCallHierarchyReferences.selectedMulti',
-        (e.selection[0]?.fromRanges.length ?? 0) > 1,
-      );
-    }),
-  );
+  // Cursor for walking a ×N node's merged call sites. Each "Open in editor" on a
+  // node steps to the NEXT site (wrapping); the cursor is keyed to the node, so
+  // invoking it on a different node restarts from that node's first site — the
+  // walk state never leaks between nodes (see nextSiteIndex).
+  let openCursor: { key: string; index: number } | undefined;
 
   let filterPanel: FilterPanelProvider | undefined;
 
@@ -192,53 +162,27 @@ export function activate(
         revealAt(uri, range, { preserveFocus: true, preview: true }),
     ),
     // Explicit "open in editor": moves focus and opens a real (non-preview) tab.
-    // Invoked from the inline node action, so it receives the CallNode.
-    vscode.commands.registerCommand('cCallHierarchyReferences.openReferenceInEditor', (node: CallNode) => {
-      const t = nodeTarget(node);
-      return revealAt(t.uri, t.range, { preserveFocus: false, preview: false });
-    }),
-    // Browse between a node's several merged call sites (the ×N badge): arrow to
-    // preview each, Enter to open the chosen one.
-    vscode.commands.registerCommand('cCallHierarchyReferences.goToCallSite', async (node: CallNode) => {
-      const uri = node.callUri;
-      const sites = node.fromRanges;
-      if (!uri || sites.length <= 1) {
-        const t = nodeTarget(node);
-        return revealAt(t.uri, t.range, { preserveFocus: false, preview: false });
-      }
-      let doc: vscode.TextDocument | undefined;
-      try {
-        doc = await vscode.workspace.openTextDocument(uri);
-      } catch {
-        /* labels fall back to the line number */
-      }
-      const qp = vscode.window.createQuickPick<vscode.QuickPickItem & { range: vscode.Range }>();
-      qp.title = `${node.item.name} — ${sites.length} call sites`;
-      qp.placeholder = 'Arrow to preview · Enter to open';
-      qp.items = sites.map((r, i) => ({
-        label: doc?.lineAt(r.start.line).text.trim() || `call site ${i + 1}`,
-        description: `:${r.start.line + 1}:${r.start.character + 1}`,
-        range: r,
-      }));
-      qp.onDidChangeActive((active) => {
-        if (active[0]) {
-          void revealAt(uri, active[0].range, { preserveFocus: true, preview: true });
+    // Invoked from the inline node action, so it receives the CallNode. For a ×N
+    // node (several merged call sites), each re-click walks to the NEXT site,
+    // wrapping around; the cursor is keyed to the node, so clicking it on a
+    // different node starts that node from its first site (no cross-node leak).
+    vscode.commands.registerCommand(
+      'cCallHierarchyReferences.openReferenceInEditor',
+      async (node: CallNode): Promise<{ index: number; total: number }> => {
+        const sites = node.fromRanges;
+        const hasSites = !!node.callUri && sites.length > 0;
+        const key = `${node.key}|${(node.callUri ?? node.item.uri).toString()}`;
+        const r = nextSiteIndex(openCursor, key, hasSites ? sites.length : 1);
+        openCursor = { key: r.key, index: r.index };
+        const target = hasSites
+          ? { uri: node.callUri!, range: sites[r.index] }
+          : nodeTarget(node);
+        if (r.total > 1) {
+          vscode.window.setStatusBarMessage(`Call site ${r.index + 1} / ${r.total}`, 2500);
         }
-      });
-      qp.onDidAccept(() => {
-        const picked = qp.activeItems[0];
-        qp.hide();
-        if (picked) {
-          void revealAt(uri, picked.range, { preserveFocus: false, preview: false });
-        }
-      });
-      qp.onDidHide(() => qp.dispose());
-      qp.show();
-    }),
-    // Enter on a ×N node walks its merged call sites (one per press, wrapping);
-    // bound to Enter via a keybinding gated on `selectedMulti`.
-    vscode.commands.registerCommand('cCallHierarchyReferences.nextCallSite', (node?: CallNode) =>
-      cycleCallSite(1, node),
+        await revealAt(target.uri, target.range, { preserveFocus: false, preview: false });
+        return { index: r.index, total: r.total };
+      },
     ),
     vscode.commands.registerCommand('cCallHierarchyReferences.toggleReferenceGrouping', () => {
       refProvider.toggleGrouping();

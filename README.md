@@ -34,7 +34,8 @@ Put the cursor on a function and run **Show call hierarchy**. The tree shows **c
 **parameter types**, a **×N** badge when clangd merges several call sites into one, and are cycle-safe and
 depth-capped. Selecting a node **previews** the call site — selected, centered and briefly flashed — while
 **focus stays in the tree**, so you can keep arrowing up and down the hierarchy. The inline **Open in
-editor** action jumps there for real and moves focus to the editor.
+editor** action jumps there for real and moves focus to the editor — and on a **×N** node (several merged
+call sites) each re-click of **Open in editor** walks to the next site, wrapping around.
 
 ### Find references — read vs write
 <img alt="References grouped by folder with read/write/declaration letter icons"

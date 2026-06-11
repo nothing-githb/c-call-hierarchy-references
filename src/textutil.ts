@@ -243,3 +243,25 @@ export function matchesQuery(query: string, candidates: string[]): boolean {
   const q = query.toLowerCase();
   return candidates.some((c) => c.toLowerCase().includes(q));
 }
+
+// ---------------------------------------------------------------------------
+// Call-site cursor (walking a ×N node's merged call sites)
+// ---------------------------------------------------------------------------
+
+/**
+ * Advance a single-slot cursor over a ×N node's merged call sites. Re-invoking
+ * on the SAME node (`key` unchanged) steps to the next site, wrapping around;
+ * invoking on a DIFFERENT node — a key mismatch, or no prior cursor — restarts
+ * at the first site. So one node's walk state never leaks into another node: the
+ * caller keeps a single `{ key, index }` and replaces it with the result each
+ * time. `total <= 1` always yields index 0.
+ */
+export function nextSiteIndex(
+  cursor: { key: string; index: number } | undefined,
+  key: string,
+  total: number,
+): { key: string; index: number; total: number } {
+  const n = total > 0 ? total : 1;
+  const index = cursor && cursor.key === key ? (cursor.index + 1) % n : 0;
+  return { key, index, total: n };
+}

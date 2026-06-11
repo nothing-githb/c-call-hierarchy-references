@@ -1,6 +1,8 @@
-/* Tests for the v0.1.15 changes:
+/* Tests for the v0.1.15+ changes:
  *  - call-tree symbol icons are coloured with the theme's symbolIcon.* colours
- *  - a ×N (multi call-site) node is contextValue `…Multi` + goToCallSite command
+ *  - a ×N (multi call-site) node is contextValue `…Multi`
+ *  - re-clicking "Open in editor" walks a ×N node's call sites, per-node, with
+ *    no walk-state leaking into another node (the v0.1.18 fix)
  *  - References in folder grouping render the top folder levels Expanded
  * Drives the REAL providers exposed by the extension's activate(). */
 const assert = require('assert');
@@ -53,18 +55,21 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
     console.log(`  icon ${ti.iconPath.id} / ${ti.iconPath.color.id} ✔`);
   });
 
-  test('×N node is contextValue "…Multi" and goToCallSite is registered', async function () {
+  test('×N node is contextValue "…Multi"; the cycling commands are gone', async function () {
     this.timeout(180000);
     const rootNode = await dispatchRoots(tree);
     if (tree.getDirection() !== 'outgoing') tree.toggleDirection();
     const callees = await tree.getChildren(rootNode);
 
     const cmds = await vscode.commands.getCommands(true);
-    assert.ok(cmds.includes('cCallHierarchyReferences.goToCallSite'), 'goToCallSite command registered');
+    assert.ok(cmds.includes('cCallHierarchyReferences.openReferenceInEditor'), 'openReferenceInEditor registered');
+    // The old quick-pick / Enter-cycle commands were removed in v0.1.18.
+    assert.ok(!cmds.includes('cCallHierarchyReferences.goToCallSite'), 'goToCallSite removed');
+    assert.ok(!cmds.includes('cCallHierarchyReferences.nextCallSite'), 'nextCallSite removed');
 
     // clangd MERGES several call sites to the same callee into one ×N node;
     // cpptools instead returns each call site as its own ×1 node. The "…Multi"
-    // marker / picker only applies to merged (×N) nodes.
+    // marker only applies to merged (×N) nodes.
     const multi = callees.find((n) => n.fromRanges.length > 1);
     for (const n of callees) {
       const cv = (await tree.getTreeItem(n)).contextValue;
@@ -77,35 +82,58 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
     }
     console.log(
       multi
-        ? `  ${multi.item.name} ×${multi.fromRanges.length} → callMulti + goToCallSite ✔`
-        : `  provider returns one node per call site (no ×N merge) — goToCallSite registered, no Multi nodes ✔`,
+        ? `  ${multi.item.name} ×${multi.fromRanges.length} → contextValue Multi ✔`
+        : `  provider returns one node per call site (no ×N merge) — no Multi nodes ✔`,
     );
   });
 
-  test('Enter cycles through a ×N node\'s call sites (nextCallSite)', async function () {
+  test('Open in editor walks a ×N node\'s call sites — per-node, no leak (v0.1.18)', async function () {
     this.timeout(180000);
-    const cmds = await vscode.commands.getCommands(true);
-    assert.ok(cmds.includes('cCallHierarchyReferences.nextCallSite'), 'nextCallSite command registered');
-
     const rootNode = await dispatchRoots(tree);
     if (tree.getDirection() !== 'outgoing') tree.toggleDirection();
     const callees = await tree.getChildren(rootNode);
     const multi = callees.find((n) => n.fromRanges.length > 1);
+    const open = (n) => vscode.commands.executeCommand('cCallHierarchyReferences.openReferenceInEditor', n);
 
     if (multi) {
-      // ×N node (clangd): a fresh node's click target is site 0, so the first
-      // Enter lands on site 1, the next on site 2, …
-      const a = await vscode.commands.executeCommand('cCallHierarchyReferences.nextCallSite', multi);
-      assert.deepStrictEqual(a, { index: 1, total: multi.fromRanges.length }, 'first Enter → site 2');
-      const b = await vscode.commands.executeCommand('cCallHierarchyReferences.nextCallSite', multi);
-      assert.strictEqual(b.index, 2, 'second Enter → site 3');
-      console.log(`  ${multi.item.name} ×${a.total}: Enter → ${a.index + 1}, ${b.index + 1} (cycle) ✔`);
+      // ×N node (clangd): each re-click of "Open in editor" walks to the next
+      // merged call site, wrapping around. The absolute start index isn't
+      // asserted — openReferenceInEditor keeps a per-session cursor, so an
+      // earlier test may already have opened this node; what matters is that each
+      // re-click STEPS FORWARD by one (mod N).
+      const N = multi.fromRanges.length;
+      const r0 = await open(multi);
+      assert.strictEqual(r0.total, N, `reports its ${N} call sites`);
+      const r1 = await open(multi);
+      assert.strictEqual(r1.index, (r0.index + 1) % N, `re-click walks forward ${r0.index}→${r1.index} of ${N}`);
+      const r2 = await open(multi);
+      assert.strictEqual(r2.index, (r1.index + 1) % N, `re-click walks forward ${r1.index}→${r2.index} of ${N}`);
+
+      // THE REPORTED BUG: after acting on ANOTHER node, returning to the ×N node
+      // must restart at its first site — walk state must not leak between nodes.
+      const other = callees.find((n) => n !== multi && n.callUri && n.fromRanges.length > 0);
+      if (other) {
+        await open(other); // cursor is now keyed to `other`
+        const back = await open(multi);
+        assert.strictEqual(
+          back.index,
+          0,
+          'after opening another node, the ×N node restarts at its first site (no cross-node leak)',
+        );
+        console.log(
+          `  ${multi.item.name} ×${N}: walks ${r0.index + 1}→${r1.index + 1}→${r2.index + 1}, resets to 1 after switching nodes ✔`,
+        );
+      } else {
+        console.log(`  ${multi.item.name} ×${N}: re-click walks forward & wraps (sole callee, leak-check skipped) ✔`);
+      }
     } else {
-      // one node per call site (cpptools): cycling a single site stays put.
+      // one node per call site (cpptools): a single-site node opens its one site.
       const one = callees.find((n) => n.fromRanges.length === 1);
-      const r = await vscode.commands.executeCommand('cCallHierarchyReferences.nextCallSite', one);
-      assert.deepStrictEqual(r, { index: 0, total: 1 }, 'single-site node stays at its only site');
-      console.log('  single-site nodes: nextCallSite stays at 1/1 ✔');
+      const a = await open(one);
+      assert.deepStrictEqual(a, { index: 0, total: 1 }, 'single-site node opens its only site');
+      const b = await open(one);
+      assert.deepStrictEqual(b, { index: 0, total: 1 }, 'single-site node stays at 1/1');
+      console.log('  single-site nodes: Open in editor stays at 1/1 ✔');
     }
   });
 

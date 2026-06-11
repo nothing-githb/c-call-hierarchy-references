@@ -3,6 +3,22 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.18]
+
+### Changed
+- **Walk a ×N node's merged call sites by re-clicking _Open in editor_.** Each click of the inline
+  **Open in editor** action on a node that merges several call sites (the **×N** badge) opens the next
+  site, wrapping around. The cursor is **per-node**, so the walk never leaks into another node.
+
+### Fixed
+- **Enter no longer gets stuck cycling a ×N node.** Pressing **Enter** now always previews the focused
+  node, so arrowing to another function and pressing Enter goes to *that* function — instead of continuing
+  to step through the previously selected ×N node's call sites.
+
+### Removed
+- The **Go to call site…** quick-pick action and the Enter-to-cycle keybinding (`nextCallSite` /
+  `goToCallSite` commands), superseded by the re-click **Open in editor** walk above.
+
 ## [0.1.17]
 
 ### Added
@@ -181,6 +197,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
   plus `excludeGlobs` / `includeGlobs` settings.
 
+[0.1.18]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.18
 [0.1.17]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.17
 [0.1.16]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.16
 [0.1.15]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.15

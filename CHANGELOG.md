@@ -3,6 +3,14 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.26]
+
+### Changed
+- **Path-match highlight now leaves the rest of the node unchanged.** When the Filter matches a node's
+  path, the path's matched part is tinted in the label, but the **description is left exactly as before**
+  (it still shows the full `params · path` in grey) — only the highlight is added. (VS Code only supports
+  highlighting the matched range on the label, so the non-matched path text can't be greyed there.)
+
 ## [0.1.25]
 
 ### Added
@@ -270,6 +278,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed **Filter** pane: live search by **name or path** (contains / glob / `/regex/`) across all views,
   plus `excludeGlobs` / `includeGlobs` settings.
 
+[0.1.26]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.26
 [0.1.25]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.25
 [0.1.24]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.24
 [0.1.23]: https://github.com/nothing-githb/c-call-hierarchy-references/releases/tag/v0.1.23

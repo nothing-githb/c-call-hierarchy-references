@@ -97,23 +97,23 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
     const item = node.item;
     const recursive = node.ancestry.has(node.key);
     const leaf = node.kind === 'call' && (node.depth >= maxDepth() || recursive);
-    // Forward slashes so the path matches the filter (which normalises) and reads
-    // consistently across platforms.
-    const rel = vscode.workspace.asRelativePath(item.uri, false).replace(/\\/g, '/');
+    const relRaw = vscode.workspace.asRelativePath(item.uri, false);
+    const rel = relRaw.replace(/\\/g, '/'); // normalised, for matching + the label
 
     let sig: h.Signature | undefined;
     if (showSignatures()) {
       sig = await h.signature(item);
     }
 
-    // When a search filter is active, tint the part it matches (the standard list
-    // match-highlight). The name is the (highlightable) label; the path normally
-    // lives in the description, which VS Code can't highlight — so when the filter
-    // matches the PATH, show the path in the label too (next to the name) and tint
-    // it there.
+    // When a search filter is active, tint the part it matches. The NAME is the
+    // (highlightable) label. When the query matches the PATH, the path is also
+    // surfaced in the label so its match can be tinted — VS Code only supports
+    // highlights on the label, not the description (and only the matched range can
+    // be tinted, not the rest greyed). The description is left UNCHANGED — it keeps
+    // showing the full "params · path" in grey — so nothing else about the node's
+    // appearance changes.
     const query = getRuntimeFilter();
     let label: string | vscode.TreeItemLabel = item.name;
-    let pathInLabel = false;
     if (query) {
       const nameHl = queryHighlights(item.name, query);
       const pathHl = queryHighlights(rel, query);
@@ -127,7 +127,6 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
             ...pathHl.map(([s, e]): [number, number] => [s + off, e + off]),
           ],
         };
-        pathInLabel = true;
       } else if (nameHl.length) {
         label = { label: item.name, highlights: nameHl };
       }
@@ -146,13 +145,9 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
     // the call-site count so 3 calls don't look like 1.
     const calls = node.fromRanges.length;
     const countBadge = calls > 1 ? `×${calls}  ·  ` : '';
-    // The path moves into the label when it's the filter match, so don't repeat it
-    // in the description there.
-    const base = pathInLabel
-      ? sig?.params || item.detail || ''
-      : sig?.params
-        ? `${sig.params}  ·  ${rel}`
-        : item.detail || rel;
+    // Description is unchanged from before (uses the raw path) — only the label
+    // gains the highlighted path.
+    const base = sig?.params ? `${sig.params}  ·  ${relRaw}` : item.detail || relRaw;
     ti.description = countBadge + base;
     ti.iconPath = iconFor(item.kind);
 

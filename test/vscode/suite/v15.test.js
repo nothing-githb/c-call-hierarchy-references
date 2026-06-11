@@ -339,7 +339,13 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
         const hl = ti.label.highlights || [];
         const hit = hl.find(([s, e]) => text.slice(s, e).toLowerCase() === 'src/bus');
         assert.ok(hit, `a highlight covers the path match "src/bus" (highlights ${JSON.stringify(hl)} over "${text}")`);
-        console.log(`  ${text}: path highlight [${hit[0]},${hit[1]}] = "${text.slice(hit[0], hit[1])}" ✔`);
+        // "don't change other parts": the description is UNCHANGED — it still
+        // shows the full path (the path is not removed from it).
+        assert.ok(
+          /src\/bus\.c/i.test(String(ti.description)),
+          `the description still shows the path unchanged (got "${ti.description}")`,
+        );
+        console.log(`  ${text}: path highlight [${hit[0]},${hit[1]}], description keeps path ✔`);
       } else {
         console.log('  no bus_write/bus_read callee — skipped');
       }

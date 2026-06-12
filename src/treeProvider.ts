@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as h from './hierarchy';
-import { matchesRuntimeFilter, maxDepth, getRuntimeFilter } from './filter';
+import { matchesRuntimeFilter, getRuntimeFilter } from './filter';
 import { queryHighlights } from './textutil';
 
 function showSignatures(): boolean {
@@ -96,7 +96,10 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
   async getTreeItem(node: CallNode): Promise<vscode.TreeItem> {
     const item = node.item;
     const recursive = node.ancestry.has(node.key);
-    const leaf = node.kind === 'call' && (node.depth >= maxDepth() || recursive);
+    // No depth cap (clangd/cpptools and VS Code's own call hierarchy impose
+    // none — the tree is lazy, one level per expand). Only a recursive call is a
+    // leaf, so an A→…→A cycle can't be expanded forever.
+    const leaf = node.kind === 'call' && recursive;
     const relRaw = vscode.workspace.asRelativePath(item.uri, false);
     const rel = relRaw.replace(/\\/g, '/'); // normalised, for matching + the label
 
@@ -191,7 +194,7 @@ export class CallTreeProvider implements vscode.TreeDataProvider<CallNode> {
     if (!node) {
       return [...this.roots];
     }
-    if (node.kind === 'call' && (node.depth >= maxDepth() || node.ancestry.has(node.key))) {
+    if (node.kind === 'call' && node.ancestry.has(node.key)) {
       return [];
     }
     const next = await this.fetchStep(node.item);

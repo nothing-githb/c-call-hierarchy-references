@@ -90,7 +90,6 @@ matches the **path**, the path shown next to the name) is tinted, so it's clear 
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `cCallHierarchyReferences.maxDepth` | `32` | Max expansion/walk depth for the call tree. |
 | `cCallHierarchyReferences.showSignatures` | `true` | Show caller parameter types in the call tree. |
 
 > Filtering by name/path is done live in the **Filter** pane — there are no glob settings.

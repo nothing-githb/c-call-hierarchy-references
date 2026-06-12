@@ -1,12 +1,7 @@
 import * as vscode from 'vscode';
 import { matchesQuery } from './textutil';
 
-const SECTION = 'cCallHierarchyReferences';
 const RUNTIME_KEY = 'cCallHierarchyReferences.runtimePathFilter';
-
-export function maxDepth(): number {
-  return vscode.workspace.getConfiguration(SECTION).get<number>('maxDepth', 32);
-}
 
 // ---- Runtime (interactive) search filter -----------------------------------
 

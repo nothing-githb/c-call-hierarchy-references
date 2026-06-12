@@ -2,7 +2,7 @@
   "name": "c-call-hierarchy-references",
   "displayName": "C Call Hierarchy & References",
   "description": "C/C++ call hierarchy (toggle callers / callees) and read/write find-references — works with clangd (recommended) or Microsoft C/C++.",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "publisher": "halistahasahin",
   "license": "MIT",
   "author": {
@@ -48,11 +48,6 @@
     "configuration": {
       "title": "C Call Hierarchy & References",
       "properties": {
-        "cCallHierarchyReferences.maxDepth": {
-          "type": "number",
-          "default": 32,
-          "description": "Maximum expansion/walk depth for the call tree (guards against unbounded recursion)."
-        },
         "cCallHierarchyReferences.showSignatures": {
           "type": "boolean",
           "default": true,

@@ -277,10 +277,7 @@ export function activate(
 
     // ---- React to settings ----
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (
-        e.affectsConfiguration('cCallHierarchyReferences.showSignatures') ||
-        e.affectsConfiguration('cCallHierarchyReferences.maxDepth')
-      ) {
+      if (e.affectsConfiguration('cCallHierarchyReferences.showSignatures')) {
         tree.refresh();
         refProvider.refresh();
       }

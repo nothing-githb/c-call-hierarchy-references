@@ -3,6 +3,15 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.31]
+
+### Removed
+- The **`maxDepth`** setting. clangd, Microsoft C/C++ and VS Code's own call hierarchy impose no depth
+  limit — the protocol returns one level per request and the tree is lazy (expanded on demand), so an
+  arbitrary cap added nothing. A recursive call (an A→…→A cycle) is still a leaf, so the tree can never be
+  expanded forever; that cycle guard is independent of any depth number. `showSignatures` is now the only
+  setting.
+
 ## [0.1.30]
 
 ### Added

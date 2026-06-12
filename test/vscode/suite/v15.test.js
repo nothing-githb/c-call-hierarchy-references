@@ -137,6 +137,50 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
     console.log(`  every node command = nextCallSite([node]); no Enter keybinding overrides it ✔`);
   });
 
+  test('Shift+Enter opens the previewed call site in a real editor and moves focus there (v0.1.30)', async function () {
+    this.timeout(180000);
+    // Enter previews (focus stays in the tree); Shift+Enter promotes that SAME
+    // location to a real editor and moves focus there to edit. Two invariants:
+    //   (1) the manifest binds shift+enter (when the call tree is focused) to
+    //       openInEditor — NOT to a node arg, so it can't read a stale selection;
+    //   (2) openInEditor opens exactly the location nextCallSite last previewed.
+    const pkg = vscode.extensions.getExtension('halistahasahin.c-call-hierarchy-references').packageJSON;
+    const shiftEnter = (pkg.contributes.keybindings || []).filter(
+      (k) => (k.key || '').toLowerCase() === 'shift+enter',
+    );
+    assert.strictEqual(shiftEnter.length, 1, 'exactly one shift+enter keybinding');
+    assert.strictEqual(
+      shiftEnter[0].command,
+      'cCallHierarchyReferences.openInEditor',
+      'shift+enter is bound to openInEditor',
+    );
+    assert.strictEqual(
+      shiftEnter[0].when,
+      'focusedView == cCallHierarchyReferences.tree',
+      'shift+enter only fires while the call tree is focused',
+    );
+
+    const cmds = await vscode.commands.getCommands(true);
+    assert.ok(cmds.includes('cCallHierarchyReferences.openInEditor'), 'openInEditor registered');
+
+    const rootNode = await dispatchRoots(tree);
+    if (tree.getDirection() !== 'outgoing') tree.toggleDirection();
+    const callees = await tree.getChildren(rootNode);
+    const node = callees.find((n) => n.callUri && n.fromRanges.length > 0) || rootNode;
+
+    // Enter previews a call site (records it as the Shift+Enter target).
+    const previewed = await vscode.commands.executeCommand('cCallHierarchyReferences.nextCallSite', node);
+    assert.ok(previewed && previewed.uri, 'nextCallSite previewed a location');
+
+    // Shift+Enter → openInEditor opens THAT location for real.
+    await vscode.commands.executeCommand('cCallHierarchyReferences.openInEditor');
+    const ed = vscode.window.activeTextEditor;
+    assert.ok(ed, 'openInEditor opened an active editor');
+    assert.strictEqual(ed.document.uri.toString(), previewed.uri, 'opened the previewed file');
+    assert.strictEqual(ed.selection.active.line, previewed.line, 'opened at the previewed line');
+    console.log(`  Shift+Enter opens previewed ${previewed.uri.split('/').pop()}#${previewed.line} in a real editor ✔`);
+  });
+
   test('Open in editor walks a ×N node\'s call sites — per-node, no leak (v0.1.18)', async function () {
     this.timeout(180000);
     const rootNode = await dispatchRoots(tree);

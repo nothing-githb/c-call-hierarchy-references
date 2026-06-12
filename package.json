@@ -2,7 +2,7 @@
   "name": "c-call-hierarchy-references",
   "displayName": "C Call Hierarchy & References",
   "description": "C/C++ call hierarchy (toggle callers / callees) and read/write find-references — works with clangd (recommended) or Microsoft C/C++.",
-  "version": "0.1.29",
+  "version": "0.1.30",
   "publisher": "halistahasahin",
   "license": "MIT",
   "author": {
@@ -86,6 +86,12 @@
         "icon": "$(go-to-file)"
       },
       {
+        "command": "cCallHierarchyReferences.openInEditor",
+        "title": "Open call site in editor (move focus, Shift+Enter)",
+        "category": "C Call Hierarchy & References",
+        "icon": "$(go-to-file)"
+      },
+      {
         "command": "cCallHierarchyReferences.refresh",
         "title": "Refresh call hierarchy",
         "category": "C Call Hierarchy & References",
@@ -120,6 +126,10 @@
       "commandPalette": [
         {
           "command": "cCallHierarchyReferences.openReferenceInEditor",
+          "when": "false"
+        },
+        {
+          "command": "cCallHierarchyReferences.openInEditor",
           "when": "false"
         },
         {
@@ -181,6 +191,13 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "cCallHierarchyReferences.openInEditor",
+        "key": "shift+enter",
+        "when": "focusedView == cCallHierarchyReferences.tree"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {

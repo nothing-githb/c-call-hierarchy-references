@@ -3,6 +3,14 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.30]
+
+### Added
+- **Shift+Enter** in the call tree opens the call site you're previewing in a **real editor and moves focus
+  there**, so you can jump straight from browsing to editing. Enter still previews (focus stays in the tree)
+  and walks a ×N node's call sites; Shift+Enter promotes the current preview — the node and ×N position
+  you're on — to a focused, editable tab.
+
 ## [0.1.29]
 
 ### Changed

@@ -90,6 +90,9 @@ export function activate(
     `${node.key}|${(node.callUri ?? node.item.uri).toString()}`;
   let openCursor: { key: string; index: number } | undefined;
   let enterCursor: { key: string; index: number } | undefined;
+  // The location Enter (nextCallSite) is currently previewing, so Shift+Enter can
+  // re-open it in a real editor with focus moved there (to edit it).
+  let lastTarget: { uri: vscode.Uri; range: vscode.Range } | undefined;
 
   let filterPanel: FilterPanelProvider | undefined;
 
@@ -220,6 +223,7 @@ export function activate(
         const loc = hasSites
           ? { uri: target.callUri!, range: sites[r.index] }
           : nodeTarget(target);
+        lastTarget = loc; // Shift+Enter re-opens this with focus moved to the editor
         if (r.total > 1) {
           vscode.window.setStatusBarMessage(`Call site ${r.index + 1} / ${r.total}`, 2500);
         }
@@ -227,6 +231,19 @@ export function activate(
         return { index: r.index, total: r.total, uri: loc.uri.toString(), line: loc.range.start.line };
       },
     ),
+    // Shift+Enter in the call tree: open the call site Enter is currently
+    // previewing in a REAL editor and move focus there (to edit it). The target
+    // is the location nextCallSite last previewed — i.e. the node and ×N walk
+    // position you're on — so Enter (preview, stay in tree) then Shift+Enter
+    // (open + jump to editor) is a natural browse-then-edit flow. Bound to a
+    // keybinding (not the palette), so it reads lastTarget rather than a stale
+    // arrow-focused selection.
+    vscode.commands.registerCommand('cCallHierarchyReferences.openInEditor', () => {
+      if (lastTarget) {
+        return revealAt(lastTarget.uri, lastTarget.range, { preserveFocus: false, preview: false });
+      }
+      return undefined;
+    }),
     vscode.commands.registerCommand('cCallHierarchyReferences.toggleReferenceGrouping', () => {
       refProvider.toggleGrouping();
       vscode.window.setStatusBarMessage(

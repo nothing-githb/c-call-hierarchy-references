@@ -443,4 +443,54 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
     );
     console.log(`  references folder "${folder.label}" → Expanded ✔`);
   });
+
+  test('Filter pane re-syncs its input from the webview "ready" handshake (v0.1.32)', function () {
+    // Repro of the reported glitch: switch away from the view and back, the box
+    // goes empty while the tree still shows "Filtered to:". Cause — the value is
+    // posted right after .html is set, racing the webview's not-yet-attached
+    // message listener, so it's lost when the DOM is rebuilt on re-show. Fix —
+    // the (re)loaded webview posts {type:'ready'} once listening, and the
+    // provider replies with the current value. Drive the REAL provider with a
+    // mock WebviewView and assert that handshake re-sends the live value.
+    const { FilterPanelProvider } = require('../../../out/filterPanel.js');
+
+    const posted = [];
+    let receive;
+    const webview = {
+      options: undefined,
+      html: undefined,
+      asWebviewUri: (u) => u,
+      cspSource: '',
+      onDidReceiveMessage: (cb) => {
+        receive = cb;
+        return { dispose() {} };
+      },
+      postMessage: (m) => {
+        posted.push(m);
+        return Promise.resolve(true);
+      },
+    };
+    const view = { webview };
+
+    const provider = new FilterPanelProvider(vscode.Uri.file('/x'), {
+      onFilter: () => {},
+      onToggleKind: () => {},
+      getKindStates: () => ({ w: true, r: true, a: true, d: true, u: true }),
+    });
+
+    // A filter is live (e.g. set by "Filter to this folder") before the pane shows.
+    provider.setValue('src/**');
+    provider.resolveWebviewView(view);
+    assert.ok(typeof receive === 'function', 'provider registered a message handler');
+
+    // Simulate the DOM being torn down and rebuilt on hide/show: only the
+    // handshake fires (the immediate post would have raced the listener).
+    posted.length = 0;
+    receive({ type: 'ready' });
+
+    const valueMsg = posted.find((m) => m.type === 'value');
+    assert.ok(valueMsg, 'the ready handshake triggers a value message');
+    assert.strictEqual(valueMsg.value, 'src/**', 'the handshake re-sends the LIVE filter value, not an empty box');
+    console.log('  webview "ready" → provider re-sends "src/**" (no empty-box desync) ✔');
+  });
 });

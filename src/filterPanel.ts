@@ -45,6 +45,16 @@ export class FilterPanelProvider implements vscode.WebviewViewProvider {
       } else if (msg.type === 'toggleKind' && msg.cat) {
         this.cb.onToggleKind(msg.cat);
         this.updateKinds();
+      } else if (msg.type === 'ready') {
+        // The webview (re)loaded — e.g. the view was hidden then shown again,
+        // which tears down its DOM (no retainContextWhenHidden). Re-push the
+        // current value + chip states so the input never desyncs from the live
+        // filter. Posting right after setting `.html` can race the script's
+        // message listener (the value arrives before it's attached and is lost,
+        // leaving an empty box while the tree still shows "Filtered to:"); this
+        // handshake — the webview asks once it's listening — is the reliable path.
+        void this.view?.webview.postMessage({ type: 'value', value: this.current });
+        this.updateKinds();
       }
     });
     void view.webview.postMessage({ type: 'value', value: this.current });
@@ -131,6 +141,10 @@ window.addEventListener('message', (e) => {
     }
   }
 });
+// Listener is attached — ask the extension for the current value + chip states.
+// This is what makes the box survive a hide/show (DOM teardown) without losing
+// its value to a race against the immediate post above.
+vscode.postMessage({ type: 'ready' });
 </script>
 </body>
 </html>`;

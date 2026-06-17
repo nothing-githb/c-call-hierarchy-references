@@ -3,6 +3,16 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.32]
+
+### Fixed
+- **Filter pane search box went empty after switching away from the view and back**, while the call tree still
+  showed "Filtered to: …". The pane is a webview whose DOM is torn down when hidden; the value was posted right
+  after the HTML was set, racing the webview's not-yet-attached message listener, so it was lost on rebuild. The
+  (re)loaded webview now sends a `ready` handshake once it's listening and the extension replies with the current
+  value + chip states, so the box always reflects the live filter. The search input and the "Filtered to:" banner
+  share one state, so they can no longer desync.
+
 ## [0.1.31]
 
 ### Removed

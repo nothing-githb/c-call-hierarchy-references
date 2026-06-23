@@ -39,6 +39,9 @@ export class ReferencesProvider implements vscode.TreeDataProvider<RefTreeNode> 
 
   private symbolName = '';
   private all: ClassifiedRef[] = [];
+  // The uri+position the current references were found from, so a refresh can
+  // re-run the same query and reflect edits/deletions (see refreshReferences).
+  private anchor: { uri: vscode.Uri; position: vscode.Position } | undefined;
   private view: vscode.TreeView<RefTreeNode> | undefined;
   private readonly lineCache = new Map<string, string[]>();
 
@@ -51,15 +54,26 @@ export class ReferencesProvider implements vscode.TreeDataProvider<RefTreeNode> 
     this.view = view;
   }
 
-  setReferences(symbolName: string, classified: ClassifiedRef[]): void {
+  setReferences(
+    symbolName: string,
+    anchor: { uri: vscode.Uri; position: vscode.Position },
+    classified: ClassifiedRef[],
+  ): void {
     this.symbolName = symbolName;
+    this.anchor = anchor;
     this.all = classified;
-    this.lineCache.clear();
+    this.lineCache.clear(); // drop stale preview lines; re-read on demand
     this.refresh();
+  }
+
+  /** The uri+position the current references were found from (undefined if none). */
+  getAnchor(): { uri: vscode.Uri; position: vscode.Position } | undefined {
+    return this.anchor;
   }
 
   clear(): void {
     this.symbolName = '';
+    this.anchor = undefined;
     this.all = [];
     this.lineCache.clear();
     this.refresh();

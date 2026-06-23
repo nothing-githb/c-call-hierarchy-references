@@ -126,6 +126,29 @@ export function activate(
   };
   syncCallDir();
 
+  // Query + classify references for a symbol and store them with their anchor
+  // (the uri+position they were found from). Both "Find references" and the
+  // Refresh button go through here, so Refresh RE-QUERIES the language server
+  // from the same anchor (picking up edits / deletions) rather than re-painting
+  // a stale snapshot.
+  const loadReferences = async (uri: vscode.Uri, position: vscode.Position): Promise<void> => {
+    const classified = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: 'Classifying references…' },
+      () => h.classifyReferences(uri, position),
+    );
+    let name = 'symbol';
+    try {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      const range = doc.getWordRangeAtPosition(position);
+      if (range) {
+        name = doc.getText(range);
+      }
+    } catch {
+      /* anchor file gone or unreadable — keep the default name */
+    }
+    refProvider.setReferences(name, { uri, position }, classified);
+  };
+
   context.subscriptions.push(
     // ---- Call hierarchy ----
     vscode.commands.registerCommand('cCallHierarchyReferences.showHierarchy', async () => {
@@ -162,15 +185,21 @@ export function activate(
       if (!editor) {
         return;
       }
-      const classified = await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: 'Classifying references…' },
-        () => h.classifyReferences(editor.document.uri, editor.selection.active),
-      );
-      refProvider.setReferences(symbolNameAt(editor), classified);
+      await loadReferences(editor.document.uri, editor.selection.active);
       await vscode.commands.executeCommand('cCallHierarchyReferences.references.focus');
     }),
 
-    vscode.commands.registerCommand('cCallHierarchyReferences.refreshReferences', () => refProvider.refresh()),
+    // Refresh = re-run the original query from its stored anchor, so edits and
+    // deletions are reflected (stale entries clear, previews update). If nothing
+    // has been searched yet there's no anchor — just repaint.
+    vscode.commands.registerCommand('cCallHierarchyReferences.refreshReferences', async () => {
+      const anchor = refProvider.getAnchor();
+      if (!anchor) {
+        refProvider.refresh();
+        return;
+      }
+      await loadReferences(anchor.uri, anchor.position);
+    }),
     vscode.commands.registerCommand('cCallHierarchyReferences.clearReferences', () => refProvider.clear()),
     // Select/preview: focus stays in the tree so you can keep browsing up/down.
     vscode.commands.registerCommand(
@@ -301,11 +330,6 @@ export function activate(
     // select) and verify Enter acts on the selected node.
     callView,
   };
-}
-
-function symbolNameAt(editor: vscode.TextEditor): string {
-  const range = editor.document.getWordRangeAtPosition(editor.selection.active);
-  return range ? editor.document.getText(range) : 'symbol';
 }
 
 function uriFromArg(arg: unknown): vscode.Uri | undefined {

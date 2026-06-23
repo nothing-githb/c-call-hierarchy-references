@@ -3,6 +3,17 @@
 All notable changes to **C Call Hierarchy & References** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.33]
+
+### Fixed
+- **Refresh references now actually re-queries the language server** instead of re-painting a stale snapshot.
+  Previously the References view stored the result of *Find references* and the Refresh button only re-rendered
+  that frozen list — so if the symbol was edited or deleted, the old references (and their old preview lines)
+  stayed on screen, and clicking one could jump to the wrong line. References are now stored with the
+  *anchor* (the file + position they were found from), and Refresh re-runs the query from that anchor, picking
+  up edits and deletions (stale rows clear, previews refresh). If nothing has been searched yet, Refresh is a
+  no-op repaint as before.
+
 ## [0.1.32]
 
 ### Fixed

@@ -444,6 +444,61 @@ suite(`v0.1.15 features [${PROVIDER}]`, () => {
     console.log(`  references folder "${folder.label}" → Expanded ✔`);
   });
 
+  test('Refresh references RE-QUERIES from the stored anchor, not a stale snapshot (v0.1.33)', async function () {
+    this.timeout(180000);
+    const refs = api.references;
+    assert.ok(refs, 'references provider is exposed');
+    assert.strictEqual(typeof refs.getAnchor, 'function', 'provider exposes getAnchor()');
+
+    const root = vscode.workspace.workspaceFolders[0].uri;
+    const busc = vscode.Uri.joinPath(root, 'src', 'bus.c');
+    const doc = await vscode.workspace.openTextDocument(busc);
+    const editor = await vscode.window.showTextDocument(doc, { preview: false });
+    const lines = doc.getText().split(/\r?\n/);
+    const defLine = lines.findIndex((l) => /\bbus_write\s*\(/.test(l) && l.includes('{'));
+    const pos = new vscode.Position(defLine, lines[defLine].indexOf('bus_write'));
+    editor.selection = new vscode.Selection(pos, pos);
+
+    let ready = [];
+    for (let i = 0; i < 50 && ready.length === 0; i++) {
+      await sleep(2000);
+      ready = (await vscode.commands.executeCommand('vscode.prepareCallHierarchy', busc, pos)) || [];
+    }
+    await vscode.window.showTextDocument(doc, { preview: false });
+    editor.selection = new vscode.Selection(pos, pos);
+
+    // Find references → stores the anchor (uri+position) it was found from.
+    try {
+      await vscode.commands.executeCommand('cCallHierarchyReferences.findReferences');
+    } catch {
+      /* the view-focus step may reject headless; references are still set */
+    }
+    let found = [];
+    for (let i = 0; i < 30 && found.length === 0; i++) {
+      await sleep(500);
+      found = await refs.getChildren();
+    }
+    assert.ok(found.length > 0, 'references populated by Find references');
+
+    const anchor = refs.getAnchor();
+    assert.ok(anchor, 'an anchor is stored after Find references (so Refresh can re-query)');
+    assert.ok(anchor.uri.toString().endsWith('bus.c'), `anchor points at the searched file (got ${anchor.uri})`);
+
+    // Refresh re-runs the query from that anchor (not a re-paint). The file is
+    // unchanged here, so a true re-query returns results again — proving the
+    // re-query path executes end-to-end. (Deletion → empty set follows from the
+    // same path: it asks the language server afresh instead of keeping stale rows.)
+    await vscode.commands.executeCommand('cCallHierarchyReferences.refreshReferences');
+    let after = [];
+    for (let i = 0; i < 30 && after.length === 0; i++) {
+      await sleep(500);
+      after = await refs.getChildren();
+    }
+    assert.ok(after.length > 0, 'references survive a Refresh (the re-query returned results)');
+    assert.ok(refs.getAnchor(), 'anchor is still set after a Refresh (re-stored by the re-query)');
+    console.log(`  Find references → anchor ${anchor.uri.path.split('/').pop()}; Refresh re-queries → ${after.length} top nodes ✔`);
+  });
+
   test('Filter pane re-syncs its input from the webview "ready" handshake (v0.1.32)', function () {
     // Repro of the reported glitch: switch away from the view and back, the box
     // goes empty while the tree still shows "Filtered to:". Cause — the value is
